@@ -1,12 +1,10 @@
 # Contributing
 
-Hi! Nice to have you here! :)
+Thanks for your interest in contributing to XFeedCleaner!
 
-First of all, huge thanks for your interest in contributing to unbaited!
+Please take a moment to review this document before submitting your first pull request. Also check for open issues and pull requests to see if someone else is working on something similar.
 
-Please take a moment to review this document before submitting your first pull request. Please also check for open issues and pull requests to see if someone else is working on something similar.
-
-If you need any help, feel free to reach out to [daniel](https://x.com/nonzeroexitcode), or open an issue.
+If you need any help, feel free to open an issue.
 
 ## Structure
 
@@ -32,13 +30,13 @@ You can fork this repo by clicking the fork button in the top right corner of th
 ### Clone on your local machine
 
 ```bash
-git clone https://github.com/your-username/unbaited.git
+git clone https://github.com/your-username/xfeedcleaner.git
 ```
 
 ### Navigate to project directory
 
 ```bash
-cd unbaited
+cd xfeedcleaner
 ```
 
 ### Create a new Branch
@@ -77,18 +75,12 @@ Build the extension:
 npm run build
 ```
 
-To load the extension in your browser:
+To load the extension in Chrome:
 
-1. Chrome/Edge:
-   - Open `chrome://extensions`
-   - Enable "Developer mode"
-   - Click "Load unpacked"
-   - Select the `extension/dist` directory
-
-2. Firefox:
-   - Open `about:debugging#/runtime/this-firefox`
-   - Click "Load Temporary Add-on"
-   - Select any file in the `extension/dist` directory
+1. Open `chrome://extensions`
+2. Enable "Developer mode"
+3. Click "Load unpacked"
+4. Select the `extension/dist` directory
 
 ## Commit Convention
 
@@ -104,19 +96,12 @@ the following categories:
 - `fix`: changes that fix a bug (ideally you will additionally reference an
   issue if present)
 - `refactor`: any code related change that is not a fix nor a feature
-- `docs`: changing existing or creating new documentation (i.e. README, docs for
-  usage of a lib or cli usage)
+- `docs`: changing existing or creating new documentation
 - `build`: all changes regarding the build of the software, changes to
   dependencies or the addition of new dependencies
-- `test`: all changes regarding tests (adding new tests or changing existing
-  ones)
-- `ci`: all changes regarding the configuration of continuous integration (i.e.
-  github actions, ci system)
+- `test`: all changes regarding tests
+- `ci`: all changes regarding the configuration of continuous integration
 - `chore`: all changes to the repository that do not fit into any of the above
   categories
 
-  e.g. `feat(extension): added firefox support`
-
-If you are interested in the detailed specification you can visit
-https://www.conventionalcommits.org/ or check out the
-[Angular Commit Message Guidelines](https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#-commit-message-guidelines).
+  e.g. `feat(extension): add thread-aware filtering`

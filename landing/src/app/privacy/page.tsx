@@ -7,14 +7,14 @@ export default function Privacy() {
           <section>
             <h2 className="text-2xl font-bold mb-4 text-foreground">Data Collection</h2>
             <p>
-              Unbaited does not collect or store any personal data. All tweet analysis happens in real-time, and no content is saved on our servers.
+              XFeedCleaner does not collect or store any personal data. All tweet analysis happens in real-time, and no content is saved on our servers.
             </p>
           </section>
   
           <section>
             <h2 className="text-2xl font-bold mb-4 text-foreground">API Usage</h2>
             <p>
-              When you use Unbaited:
+              When you use XFeedCleaner:
             </p>
             <ul className="list-disc pl-5 space-y-2 mt-2">
               <li>Tweet content is sent to Groq&apos;s API for analysis</li>
@@ -33,7 +33,7 @@ export default function Privacy() {
           <section>
             <h2 className="text-2xl font-bold mb-4 text-foreground">Contact</h2>
             <p>
-              For privacy concerns or questions, please reach out to the <a href="https://github.com/danielpetho/unbaited/issues" className="underline" target="_blank" rel="noopener noreferrer">GitHub repository</a>.
+              For privacy concerns or questions, please reach out via the <a href="https://github.com/moritzWa/xfeedcleaner/issues" className="underline" target="_blank" rel="noopener noreferrer">GitHub repository</a>.
             </p>
           </section>
         </div>
