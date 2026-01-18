@@ -1,45 +1,38 @@
-# unbaited (fork)
+# XFeedCleaner
 
-Control your X feed with an LLM of your choice from Groq. A browser extension that helps you filter out engagement bait and inflammatory content from your X (formerly Twitter) feed.
+A Chrome extension that helps you filter out boring, sloppy, and uninteresting content from your X (formerly Twitter) feed using AI.
 
-This is a fork of [danielpetho/unbaited](https://github.com/danielpetho/unbaited) with planned improvements.
+Fork of [danielpetho/unbaited](https://github.com/danielpetho/unbaited) with improvements.
+
+## Features
+
+- **Customizable filters** - define your own criteria for what content to hide
+- **Thread context awareness** - when a reply is filtered, the parent tweet is also hidden to avoid orphaned content
+- **One-click reveal** - easily see what was hidden if you're curious
+- **Multiple LLM models** - choose from different Groq models based on speed/quality tradeoff
 
 ## Planned Features
 
-- **Thread context awareness**: Capture reply chains and analyze parent + reply together. When filtering a reply, also hide the orphaned parent tweet (and vice versa) instead of leaving contextless tweets visible.
-
-- **Quick "Not Interested" button**: Click a button on any tweet to have an LLM analyze what it's about and automatically add that category to your filter criteria. Mimics Twitter mobile's "Not interested" feature for desktop web.
-
-- **Reverse mode**: Toggle to only show filtered tweets. Useful for validating and tuning your prompt—scroll through what would be hidden to check for false positives.
+- **Image support**: Analyze images in tweets using a vision model. Currently only text is analyzed.
+- **Hosted proxy server**: Add a server as a proxy to the LLM API, so users don't need to manage their own API key.
+- **Quick "Not Interested" button**: Click a button on any tweet to have an LLM analyze what it's about and automatically add that category to your filter criteria.
+- **Reverse mode**: Toggle to only show filtered tweets. Useful for validating and tuning your prompt.
 
 ## How it works
 
 The extension uses Groq's ultra-fast API to analyze tweets using a model of your choice. When you scroll through X, it:
 
 1. Detects new tweets as they appear in your viewport
-2. Sends the tweet content (only text as of now) to Groq's API for analysis
-3. Blurs tweets that are identified as engagement bait, political tweets, etc.
+2. Sends the tweet content to Groq's API for analysis
+3. Blurs tweets that match your filter criteria (engagement bait, politics, low-effort content, etc.)
 4. Gives you the option to reveal hidden tweets with a single click
 
 ## Installation
 
-### Chrome/Safari
 1. Install the extension from the [Chrome Web Store](https://chromewebstore.google.com/detail/unbaited-prototype/bpbnggihcaknipcgbpgjgfhgmdgcokcg)
 2. Get your API key from [Groq](https://console.groq.com)
 3. Open the extension settings and enter your API key
 4. Optionally customize the system prompt to adjust how tweets are analyzed
-
-### Firefox
-1. Install the extension from [Mozilla Add-ons](https://addons.mozilla.org/en-US/firefox/addon/unbaited-prototype/)
-2. Get your API key from [Groq](https://console.groq.com) 
-3. Open the extension settings and enter your API key
-4. Optionally customize the system prompt to adjust how tweets are analyzed
-
-## Browser Support
-
-- Chrome: ✅ Full support
-- Firefox: ✅ Full support
-- Safari: ✅ Full support
 
 ## Development
 
@@ -52,30 +45,11 @@ The project consists of two parts:
 ```bash
 cd extension
 npm i
-npm build
+npm run build
 ```
 
-#### Loading in browsers
-
-##### Chrome/Safari
 Load the `extension/dist` directory as an unpacked extension:
-1. Open Chrome/Safari
+1. Open Chrome
 2. Go to Extensions page
 3. Enable Developer Mode
 4. Click "Load unpacked" and select the `extension/dist` directory
-
-##### Firefox
-Load the extension temporarily:
-1. Open Firefox
-2. Go to `about:debugging`
-3. Click "This Firefox"
-4. Click "Load Temporary Add-on"
-5. Select any file in the `extension/dist` directory
-
-### Implementation Notes
-
-The extension uses different approaches for background processing:
-- Chrome/Safari: Uses Service Workers (MV3)
-- Firefox: Uses Background Scripts (MV3 with scripts fallback)
-
-This is handled automatically in the code, but when testing make sure to verify functionality in both environments.

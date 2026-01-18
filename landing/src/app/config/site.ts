@@ -1,14 +1,12 @@
 export const siteConfig = {
-    name: "unbaited - control your x feed with llms",
-    url: "https://unbaited.danielpetho.com",
-    ogImage: "https://danielpetho.com/og.jpg",
-    description:
-      "a browser extension that helps you filter out engagement bait from x/twitter using ai",
-    links: {
-      twitter: "https://twitter.com/nonzeroexitcode",
-      github: "https://github.com/danielpetho/unbaited",
-    },
-  };
-  
-  export type SiteConfig = typeof siteConfig;
-  
+  name: "XFeedCleaner - filter boring content from X",
+  url: "https://xfeedcleaner.com",
+  ogImage: "https://xfeedcleaner.com/og.jpg",
+  description:
+    "a Chrome extension that helps you filter out boring, sloppy, and uninteresting content from X/Twitter using AI",
+  links: {
+    github: "https://github.com/moritzWa/xfeedcleaner",
+  },
+};
+
+export type SiteConfig = typeof siteConfig;

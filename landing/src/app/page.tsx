@@ -1,43 +1,37 @@
-'use client';
-
 import Image from "next/image";
 import Link from "next/link";
 import TweetEmbed from "@/components/tweet-embed";
-import useDetectBrowser from "@/hooks/use-detect-browser";
 
-const CHROME_STORE_URL = "https://chromewebstore.google.com/detail/unbaited-prototype/bpbnggihcaknipcgbpgjgfhgmdgcokcg";
-const FIREFOX_STORE_URL = "https://addons.mozilla.org/en-US/firefox/addon/unbaited-prototype";
+const CHROME_STORE_URL =
+  "https://chromewebstore.google.com/detail/unbaited-prototype/bpbnggihcaknipcgbpgjgfhgmdgcokcg";
 
 export default function Home() {
-  const browserName = useDetectBrowser()
-  const isFirefox = browserName === 'Firefox'
-
   return (
     <main className="max-w-2xl mx-auto px-4 py-12 font-mono lowercase">
       <div className="flex flex-col items-center">
         <div className="flex flex-row items-center gap-x-2 ">
           <Image
             src="/logo128.png"
-            alt="Unbaited Logo"
+            alt="XFeedCleaner Logo"
             width={32}
             height={32}
             className="rounded-full"
           />
-          <h1 className="text-4xl font-bold">unbaited</h1>
+          <h1 className="text-4xl font-bold">XFeedCleaner</h1>
         </div>
         <p className="text-lg text-gray-600 dark:text-gray-400 text-center mt-4">
-          Control your feed with LLMs on X
+          Filter boring and sloppy content from your X feed
         </p>
       </div>
 
       <div className="flex justify-center mt-8">
         <a
-          href={isFirefox ? FIREFOX_STORE_URL : CHROME_STORE_URL}
+          href={CHROME_STORE_URL}
           className="bg-black dark:bg-white text-white dark:text-black px-6 py-3 rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
           target="_blank"
           rel="noopener noreferrer"
         >
-          Add to {isFirefox ? 'Firefox' : 'Chrome'}
+          Add to Chrome
         </a>
       </div>
 
@@ -45,11 +39,11 @@ export default function Home() {
         <section>
           <h2 className="text-2xl font-bold mb-4">What is this?</h2>
           <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-            Unbaited is a browser extension that helps you filter out engagement
-            bait and inflammatory content from your X (formerly Twitter) feed.
-            It uses AI to analyze tweets in real-time and hides content designed
-            to provoke emotional responses or increase engagement through
-            controversial topics.
+            XFeedCleaner is a Chrome extension that helps you filter out
+            content you don&apos;t want to see on X (formerly Twitter). It uses
+            AI to analyze tweets in real-time and hides boring, low-effort,
+            engagement bait, and off-topic content so you can focus on what
+            actually interests you.
           </p>
         </section>
 
@@ -60,13 +54,16 @@ export default function Home() {
           </div>
           <div className="space-y-4 text-gray-600 dark:text-gray-400">
             <p>
-              The extension uses Groq&apos;s ultra-fast API to analyze tweets using
-              an llm of your choice. When you scroll through X, it:
+              The extension uses Groq&apos;s ultra-fast API to analyze tweets
+              using an LLM of your choice. When you scroll through X, it:
             </p>
             <ol className="list-decimal pl-5 space-y-2">
               <li>Detects new tweets as they appear in your viewport</li>
               <li>Sends the tweet content to Groq&apos;s API for analysis</li>
-              <li>Blurs tweets that are identified as engagement bait</li>
+              <li>
+                Blurs tweets that match your filter criteria (engagement bait,
+                politics, low-effort content, etc.)
+              </li>
               <li>
                 Gives you the option to reveal hidden tweets with a single click
               </li>
@@ -75,18 +72,37 @@ export default function Home() {
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-4">Important Notes</h2>
+          <h2 className="text-2xl font-bold mb-4">Features</h2>
           <div className="space-y-4 text-gray-600 dark:text-gray-400">
-            <p>
-              This is a prototype and thought-provoker. The goal is to
-              demonstrate how social media platforms could integrate more user
-              controls natively, giving people more agency over their feed
-              content.
-            </p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>
+                <strong>Customizable filters</strong> - define your own criteria
+                for what content to hide
+              </li>
+              <li>
+                <strong>Thread-aware filtering</strong> - when a reply is
+                filtered, the parent tweet is also hidden to avoid orphaned
+                content
+              </li>
+              <li>
+                <strong>One-click reveal</strong> - easily see what was hidden
+                if you&apos;re curious
+              </li>
+              <li>
+                <strong>Multiple LLM models</strong> - choose from different
+                Groq models based on speed/quality tradeoff
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-4">Getting Started</h2>
+          <div className="space-y-4 text-gray-600 dark:text-gray-400">
             <p>To use the extension, you&apos;ll need:</p>
             <ul className="list-disc pl-5 space-y-2">
               <li>
-                Your own{" "}
+                A free{" "}
                 <a
                   href="https://console.groq.com"
                   className="text-black dark:text-white underline"

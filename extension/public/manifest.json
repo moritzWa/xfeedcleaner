@@ -1,6 +1,6 @@
 {
-  "name": "unbaited",
-  "description": "Control your X feed with an LLM",
+  "name": "XFeedCleaner",
+  "description": "Filter boring and sloppy content from your X feed using AI",
   "version": "0.0.6",
   "manifest_version": 3,
   "icons": {
@@ -25,8 +25,7 @@
   ],
   "homepage_url": "https://unbaited.danielpetho.com",
   "background": {
-    "service_worker": "serviceWorker.js",
-    "scripts": ["serviceWorker.js"]
+    "service_worker": "serviceWorker.js"
   },
   "content_scripts": [
     {
