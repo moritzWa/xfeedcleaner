@@ -1,6 +1,16 @@
-# unbaited
+# unbaited (fork)
 
 Control your X feed with an LLM of your choice from Groq. A browser extension that helps you filter out engagement bait and inflammatory content from your X (formerly Twitter) feed.
+
+This is a fork of [danielpetho/unbaited](https://github.com/danielpetho/unbaited) with planned improvements.
+
+## Planned Features
+
+- **Thread context awareness**: Capture reply chains and analyze parent + reply together. When filtering a reply, also hide the orphaned parent tweet (and vice versa) instead of leaving contextless tweets visible.
+
+- **Quick "Not Interested" button**: Click a button on any tweet to have an LLM analyze what it's about and automatically add that category to your filter criteria. Mimics Twitter mobile's "Not interested" feature for desktop web.
+
+- **Reverse mode**: Toggle to only show filtered tweets. Useful for validating and tuning your prompt—scroll through what would be hidden to check for false positives.
 
 ## How it works
 
