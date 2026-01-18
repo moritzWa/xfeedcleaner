@@ -88,6 +88,14 @@ function debugLog(...args: unknown[]) {
     }
 }
 
+// In-memory store for tweet connections
+interface TweetConnection {
+    element: Element;
+    parentElement: Element | null;
+    replyElement: Element | null;
+}
+const tweetConnections = new Map<string, TweetConnection>();
+
 // Detect if a tweet has a thread connector (grey vertical line)
 function detectThreadConnector(tweetElement: Element): {
     hasConnectorAbove: boolean;
@@ -394,9 +402,48 @@ const tweetObserver = new IntersectionObserver(
                         }
                     }
 
-                    // Store thread info on element for later use when filtering
-                    tweetElement.setAttribute('data-has-connector-above', String(threadInfo.hasConnectorAbove));
-                    tweetElement.setAttribute('data-has-connector-below', String(threadInfo.hasConnectorBelow));
+                    // Store connections in memory
+                    const cellInner = tweetElement.closest('[data-testid="cellInnerDiv"]');
+                    let parentElement: Element | null = null;
+                    let replyElement: Element | null = null;
+
+                    // Find parent tweet element if this is a reply
+                    if (threadInfo.hasConnectorAbove && cellInner) {
+                        const prevCell = cellInner.previousElementSibling;
+                        if (prevCell?.getAttribute('data-testid') === 'cellInnerDiv') {
+                            parentElement = prevCell.querySelector('[data-testid="tweet"]');
+                        }
+                    }
+
+                    // Find reply tweet element if this has a reply below
+                    if (threadInfo.hasConnectorBelow && cellInner) {
+                        const nextCell = cellInner.nextElementSibling;
+                        if (nextCell?.getAttribute('data-testid') === 'cellInnerDiv') {
+                            replyElement = nextCell.querySelector('[data-testid="tweet"]');
+                        }
+                    }
+
+                    // Store in Map
+                    tweetConnections.set(tweetContent.id, {
+                        element: tweetElement,
+                        parentElement,
+                        replyElement
+                    });
+
+                    // Also update the parent's replyElement to point to us (if parent was processed first)
+                    if (parentElement) {
+                        const parentId = parentElement.getAttribute('data-tweet-id');
+                        if (parentId && tweetConnections.has(parentId)) {
+                            const parentConnection = tweetConnections.get(parentId)!;
+                            parentConnection.replyElement = tweetElement;
+                        }
+                    }
+
+                    debugLog('Stored connection:', {
+                        id: tweetContent.id,
+                        hasParent: !!parentElement,
+                        hasReply: !!replyElement
+                    });
 
                     chrome.runtime.sendMessage({
                         action: 'newTweet',
@@ -512,19 +559,6 @@ function hideTweet(tweetElement: Element) {
     tweetElement.classList.add('unbaited-tweet', 'hidden-tweet');
 }
 
-// Helper function to get parent tweet (if this tweet has connector above)
-function getParentTweetElement(tweetElement: Element): Element | null {
-    const cellInner = tweetElement.closest('[data-testid="cellInnerDiv"]');
-    if (!cellInner) return null;
-
-    const prevCell = cellInner.previousElementSibling;
-    if (!prevCell || prevCell.getAttribute('data-testid') !== 'cellInnerDiv') {
-        return null;
-    }
-
-    return prevCell.querySelector('[data-testid="tweet"]');
-}
-
 chrome.runtime.onMessage.addListener((message) => {
     if (message.action === 'analysisResult') {
         const { tweetId, isBait, error } = message.result;
@@ -542,53 +576,38 @@ chrome.runtime.onMessage.addListener((message) => {
             chrome.storage.sync.get(['displayMode'], (result) => {
                 const displayMode = result.displayMode || 'blur';
 
-                // Debug: log the connector attributes
-                const hasConnectorAbove = tweetElement.getAttribute('data-has-connector-above');
-                const hasConnectorBelow = tweetElement.getAttribute('data-has-connector-below');
+                // Get connections from our in-memory Map
+                const connection = tweetConnections.get(tweetId);
                 debugLog('Filtering tweet:', {
                     tweetId,
-                    hasConnectorAbove,
-                    hasConnectorBelow
+                    hasConnection: !!connection,
+                    hasParent: !!connection?.parentElement,
+                    hasReply: !!connection?.replyElement
                 });
 
+                // Blur/hide the main tweet
                 if (displayMode === 'blur') {
                     applyBlurEffect(tweetElement, message.result.reasons);
                 } else {
                     hideTweet(tweetElement);
                 }
 
-                // If this tweet has a connector above (it's a reply), also hide the parent
-                if (hasConnectorAbove === 'true') {
-                    debugLog('Tweet has connector above, looking for parent...');
-                    const parentTweet = getParentTweetElement(tweetElement);
-                    debugLog('Parent tweet found:', !!parentTweet);
-                    if (parentTweet) {
-                        debugLog('Hiding parent tweet because reply was filtered');
-                        if (displayMode === 'blur') {
-                            applyBlurEffect(parentTweet, ['thread filtered']);
-                        } else {
-                            hideTweet(parentTweet);
-                        }
+                // Also blur/hide connected tweets from our stored references
+                if (connection?.parentElement) {
+                    debugLog('Hiding parent tweet (from stored reference)');
+                    if (displayMode === 'blur') {
+                        applyBlurEffect(connection.parentElement, ['thread filtered']);
+                    } else {
+                        hideTweet(connection.parentElement);
                     }
                 }
 
-                // If this tweet has a connector below (it's a parent), also hide the reply
-                if (hasConnectorBelow === 'true') {
-                    debugLog('Tweet has connector below, looking for reply...');
-                    const cellInner = tweetElement.closest('[data-testid="cellInnerDiv"]');
-                    const nextCell = cellInner?.nextElementSibling;
-                    debugLog('Next cell found:', !!nextCell, nextCell?.getAttribute('data-testid'));
-                    if (nextCell?.getAttribute('data-testid') === 'cellInnerDiv') {
-                        const replyTweet = nextCell.querySelector('[data-testid="tweet"]');
-                        debugLog('Reply tweet found:', !!replyTweet);
-                        if (replyTweet) {
-                            debugLog('Hiding reply tweet because parent was filtered');
-                            if (displayMode === 'blur') {
-                                applyBlurEffect(replyTweet, ['thread filtered']);
-                            } else {
-                                hideTweet(replyTweet);
-                            }
-                        }
+                if (connection?.replyElement) {
+                    debugLog('Hiding reply tweet (from stored reference)');
+                    if (displayMode === 'blur') {
+                        applyBlurEffect(connection.replyElement, ['thread filtered']);
+                    } else {
+                        hideTweet(connection.replyElement);
                     }
                 }
             });

@@ -1,7 +1,8 @@
 // NOTE: these DEFAULT_CRITERIA, SYSTEM_PROMPT_PREFIX, SYSTEM_PROMPT_SUFFIX, and constructFullPrompt
 //       are duplicated in src/lib/constants.ts since we cannot import them from the service worker.
 
-export const DEFAULT_CRITERIA = `- The tweet uses manipulative tactics to gain engagement (engagement bait)
+export const DEFAULT_CRITERIA = `- The tweet is not interesting and just making a joke or pointing out something funny
+- The tweet uses manipulative tactics to gain engagement (engagement bait)
 - The tweet is political in nature. It discusses politics, government, political issues, parties, candidates, elections, or any other political topic, be it related to any country or region.
 - The tweet discusses ideologies in relation to politics. Topics such as racism, communism, fascism, nationalism, immigration, anti-immigration, DEI, woke-ism, far-left, far-right, etc.
 - The tweet is a low-effort reply (emoji-only, single word like "this", "lol", "+1", etc.)
