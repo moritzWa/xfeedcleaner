@@ -1,6 +1,4 @@
-import Image from "next/image";
 import Link from "next/link";
-import TweetEmbed from "@/components/tweet-embed";
 
 const CHROME_STORE_URL =
   "https://chromewebstore.google.com/detail/unbaited-prototype/bpbnggihcaknipcgbpgjgfhgmdgcokcg";
@@ -9,16 +7,7 @@ export default function Home() {
   return (
     <main className="max-w-2xl mx-auto px-4 py-12 font-mono lowercase">
       <div className="flex flex-col items-center">
-        <div className="flex flex-row items-center gap-x-2 ">
-          <Image
-            src="/logo128.png"
-            alt="XFeedCleaner Logo"
-            width={32}
-            height={32}
-            className="rounded-full"
-          />
-          <h1 className="text-4xl font-bold">XFeedCleaner</h1>
-        </div>
+        <h1 className="text-4xl font-bold">XFeedCleaner</h1>
         <p className="text-lg text-gray-600 dark:text-gray-400 text-center mt-4">
           Filter boring and sloppy content from your X feed
         </p>
@@ -49,9 +38,6 @@ export default function Home() {
 
         <section>
           <h2 className="text-2xl font-bold mb-4">How it works</h2>
-          <div className="aspect-video w-full bg-transparent mb-12 flex justify-center">
-            <TweetEmbed />
-          </div>
           <div className="space-y-4 text-gray-600 dark:text-gray-400">
             <p>
               The extension uses Groq&apos;s ultra-fast API to analyze tweets

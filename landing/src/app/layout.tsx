@@ -61,9 +61,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script async src="https://platform.twitter.com/widgets.js" charSet="utf-8" />
-      </head>
+      <head />
       <body className={`${geistMono.className} antialiased`}>
         <ThemeProvider>
           <Header />
