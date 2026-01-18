@@ -23,7 +23,7 @@
     "https://*.x.com/*",
     "https://api.groq.com/*"
   ],
-  "homepage_url": "https://unbaited.danielpetho.com",
+  "homepage_url": "https://x-feed-cleaner.vercel.app",
   "background": {
     "service_worker": "serviceWorker.js"
   },
@@ -47,7 +47,7 @@
   ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "unbaited@danielpetho.com",
+      "id": "xfeedcleaner@moritzw.com",
       "strict_min_version": "58.0"
     }
   }

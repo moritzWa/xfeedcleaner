@@ -2,26 +2,26 @@ import './index.css';
 
 const style = document.createElement('style');
 style.textContent = `
-  #unbaited * {
+  #xfeedcleaner * {
     all: unset;
   }
 
-  #unbaited ul {
+  #xfeedcleaner ul {
     list-style-type: disc !important;
     margin: 0 !important;
     padding-left: 20px !important;
   }
 
-  #unbaited li {
+  #xfeedcleaner li {
   display: list-item !important;
     margin: 0.5em 0 !important;
   }
 
-  #unbaited a {
+  #xfeedcleaner a {
     cursor: pointer;
   }
 
-  #unbaited hr {
+  #xfeedcleaner hr {
     height: 1px !important;
     border: none !important;
     padding: 0 !important;
@@ -37,7 +37,7 @@ document.head.appendChild(link);
 
 const showButtonStyle = document.createElement('style');
 showButtonStyle.textContent = `
-  .unbaited-controls {
+  .xfc-controls {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -49,7 +49,7 @@ showButtonStyle.textContent = `
     z-index: 1000;
   }
 
-  .unbaited-show-tweet-button {
+  .xfc-show-tweet-button {
     background-color: white;
     color: black;
     padding: 8px 16px;
@@ -59,7 +59,7 @@ showButtonStyle.textContent = `
     font-family: system-ui;
   }
 
-  .unbaited-reasons {
+  .xfc-reasons {
     color: #666;
     font-size: 12px;
     text-align: center;
@@ -70,11 +70,11 @@ showButtonStyle.textContent = `
     border-radius: 4px;
   }
 
-  .unbaited-tweet-container {
+  .xfc-tweet-container {
     position: relative;
   }
 
-  .unbaited-tweet.hidden-tweet {
+  .xfc-tweet.hidden-tweet {
     display: none !important;
   }
 `;
@@ -84,7 +84,7 @@ const DEBUG = true;
 
 function debugLog(...args: unknown[]) {
     if (DEBUG) {
-        console.log('[unbaited]', ...args);
+        console.log('[xfc]', ...args);
     }
 }
 
@@ -508,35 +508,35 @@ if (
 // Helper function to apply blur effect to a tweet
 function applyBlurEffect(tweetElement: Element, reasons?: string[]) {
     // Skip if already blurred
-    if (tweetElement.classList.contains('unbaited-tweet')) return;
+    if (tweetElement.classList.contains('xfc-tweet')) return;
 
     // Add container for relative positioning
     const container = document.createElement('div');
-    container.className = 'unbaited-tweet-container';
+    container.className = 'xfc-tweet-container';
     tweetElement.parentNode?.insertBefore(container, tweetElement);
     container.appendChild(tweetElement);
 
     // Create controls container
     const controlsContainer = document.createElement('div');
-    controlsContainer.className = 'unbaited-controls';
+    controlsContainer.className = 'xfc-controls';
     container.appendChild(controlsContainer);
 
     // Add the show button
     const showButton = document.createElement('button');
-    showButton.className = 'unbaited-show-tweet-button';
+    showButton.className = 'xfc-show-tweet-button';
     showButton.textContent = 'Show';
     controlsContainer.appendChild(showButton);
 
     // Add filter reasons if available
     if (reasons && reasons.length > 0) {
         const reasonsEl = document.createElement('div');
-        reasonsEl.className = 'unbaited-reasons';
+        reasonsEl.className = 'xfc-reasons';
         reasonsEl.textContent = `Filtered: ${reasons.join(', ')}`;
         controlsContainer.appendChild(reasonsEl);
     }
 
     // Apply blur effect
-    tweetElement.classList.add('unbaited-tweet');
+    tweetElement.classList.add('xfc-tweet');
     (tweetElement as HTMLElement).style.filter = 'blur(12px)';
 
     // Add click handler for the show button
@@ -546,7 +546,7 @@ function applyBlurEffect(tweetElement: Element, reasons?: string[]) {
 
         // Remove blur effect
         (tweetElement as HTMLElement).style.filter = 'none';
-        tweetElement.classList.remove('unbaited-tweet');
+        tweetElement.classList.remove('xfc-tweet');
 
         // Remove the controls container
         controlsContainer.remove();
@@ -555,8 +555,8 @@ function applyBlurEffect(tweetElement: Element, reasons?: string[]) {
 
 // Helper function to hide a tweet completely
 function hideTweet(tweetElement: Element) {
-    if (tweetElement.classList.contains('unbaited-tweet')) return;
-    tweetElement.classList.add('unbaited-tweet', 'hidden-tweet');
+    if (tweetElement.classList.contains('xfc-tweet')) return;
+    tweetElement.classList.add('xfc-tweet', 'hidden-tweet');
 }
 
 chrome.runtime.onMessage.addListener((message) => {
@@ -619,12 +619,12 @@ chrome.runtime.onMessage.addListener((message) => {
     if (message.action === 'toggleExtension') {
         if (!message.isEnabled) {
             // Remove all blur effects and show buttons when disabled
-            document.querySelectorAll('.unbaited-tweet').forEach((tweet) => {
+            document.querySelectorAll('.xfc-tweet').forEach((tweet) => {
                 (tweet as HTMLElement).style.filter = 'none';
-                tweet.classList.remove('unbaited-tweet');
+                tweet.classList.remove('xfc-tweet');
             });
             document
-                .querySelectorAll('.unbaited-show-tweet-button')
+                .querySelectorAll('.xfc-show-tweet-button')
                 .forEach((button) => {
                     button.remove();
                 });
