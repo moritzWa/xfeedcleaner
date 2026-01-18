@@ -3,4 +3,4 @@
 .venv
 !.envrc
 ./extension/dist
-*/dist
+*/dist*.zip
