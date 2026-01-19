@@ -25,12 +25,12 @@
   ],
   "homepage_url": "https://x-feed-cleaner.vercel.app",
   "background": {
-    "service_worker": "serviceWorker.js"
+    "service_worker": "src/service-worker.ts"
   },
   "content_scripts": [
     {
       "matches": ["*://*.x.com/*", "*://x.com/*"],
-      "js": ["contentScript.js"]
+      "js": ["src/content-script.ts"]
     }
   ],
   "web_accessible_resources": [

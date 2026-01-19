@@ -1,5 +1,6 @@
 export const DEFAULT_CRITERIA = `FILTER these types of tweets:
 - Engagement bait: rage bait, thirst traps, "hot take", "agree or disagree?", ratio requests
+- Empty musings: rhetorical questions or personal statements with no new information, insights, or useful thoughts - just vibes or trend-riding
 - Government politics: elections, political parties, candidates, voting
 - Culture war content: racism debates, immigration policy, DEI controversy, left vs right ideology
 - Low-effort replies: emoji-only, "this", "lol", "+1", "W", "L", "ratio"
@@ -23,6 +24,7 @@ Respond in JSON: {"filter": true/false, "reason": "3-5 word explanation"}
 Examples:
 {"filter": true, "reason": "political election content"}
 {"filter": true, "reason": "engagement bait ratio request"}
+{"filter": true, "reason": "empty musing no substance"}
 {"filter": false, "reason": "tech workflow tip"}
 {"filter": false, "reason": "startup product update"}`;
 

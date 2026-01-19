@@ -8,21 +8,28 @@ if (typeof browser === "undefined") {
   (globalThis as any).browser = chrome;
 }
 
+// Models that support vision/image input
+const VISION_MODELS = [
+  "meta-llama/llama-4-scout-17b-16e-instruct",
+  "meta-llama/llama-4-maverick-17b-128e-instruct",
+];
+
 async function analyzeWithGroq(
   text: string,
-  tweetId: string
+  tweetId: string,
+  images: string[] = []
 ): Promise<{
   tweetId: string;
   isBait: boolean;
   reason?: string;
-  debugInfo?: { prompt: string; tweetText: string; rawResponse: string };
+  debugInfo?: { prompt: string; tweetText: string; images: string[]; rawResponse: string };
   error?: string;
 }> {
   let fullPrompt = "";
   let rawResponse = "";
 
   try {
-    console.log("Analyzing tweet:", { tweetId, text });
+    console.log("Analyzing tweet:", { tweetId, text, imageCount: images.length });
 
     // Get all settings from sync storage
     const { groqApiKey, promptCriteria, selectedModel, isEnabled } =
@@ -51,7 +58,28 @@ async function analyzeWithGroq(
     fullPrompt = constructFullPrompt(criteria);
 
     // Use selected model or fall back to default
-    const model = selectedModel || "gemma2-9b-it";
+    const model = selectedModel || "llama-3.3-70b-versatile";
+
+    // Check if model supports vision and we have images
+    const isVisionModel = VISION_MODELS.includes(model);
+    const hasImages = images.length > 0;
+
+    // Build user message content based on model capabilities
+    let userContent: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
+
+    if (isVisionModel && hasImages) {
+      // Vision model with images - use multimodal format (send only first image for simplicity)
+      userContent = [
+        { type: "text", text: text || "Analyze this tweet image:" },
+        {
+          type: "image_url" as const,
+          image_url: { url: images[0] },
+        },
+      ];
+    } else {
+      // Text-only
+      userContent = text;
+    }
 
     const response = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
@@ -70,7 +98,7 @@ async function analyzeWithGroq(
             },
             {
               role: "user",
-              content: text,
+              content: userContent,
             },
           ],
           temperature: 0,
@@ -93,7 +121,7 @@ async function analyzeWithGroq(
         tweetId,
         isBait: false,
         error: "Invalid API response",
-        debugInfo: { prompt: fullPrompt, tweetText: text, rawResponse: JSON.stringify(data) },
+        debugInfo: { prompt: fullPrompt, tweetText: text, images, rawResponse: JSON.stringify(data) },
       };
     }
 
@@ -127,7 +155,7 @@ async function analyzeWithGroq(
       tweetId,
       isBait,
       reason,
-      debugInfo: { prompt: fullPrompt, tweetText: text, rawResponse },
+      debugInfo: { prompt: fullPrompt, tweetText: text, images, rawResponse },
     };
   } catch (error) {
     console.error("Error analyzing tweet:", error);
@@ -135,7 +163,7 @@ async function analyzeWithGroq(
       tweetId,
       isBait: false,
       error: (error as Error).message || "Unknown error",
-      debugInfo: { prompt: fullPrompt, tweetText: text, rawResponse },
+      debugInfo: { prompt: fullPrompt, tweetText: text, images, rawResponse },
     };
   }
 }
@@ -152,9 +180,10 @@ browser.runtime.onMessage.addListener((request, sender) => {
       }
 
       const tweetId = request.content.id;
+      const images = request.content.images || [];
 
       // Continue with analysis...
-      analyzeWithGroq(request.content.text, tweetId).then((result) => {
+      analyzeWithGroq(request.content.text, tweetId, images).then((result) => {
         console.log("Analysis result:", result);
         if (sender.tab && sender.tab.id) {
           browser.tabs.sendMessage(sender.tab.id, {
@@ -183,7 +212,7 @@ browser.runtime.onInstalled.addListener(async () => {
   ]);
   const defaults = {
     ...(promptCriteria ? {} : { promptCriteria: DEFAULT_CRITERIA }),
-    ...(selectedModel ? {} : { selectedModel: "gemma2-9b-it" }),
+    ...(selectedModel ? {} : { selectedModel: "llama-3.3-70b-versatile" }),
     isEnabled: true,
   };
 

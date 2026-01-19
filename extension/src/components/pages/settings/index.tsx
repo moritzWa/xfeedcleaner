@@ -14,20 +14,16 @@ import {
 
 const models = [
   // Production Models
-  { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant', provider: 'Meta' },
-  { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile', provider: 'Meta' },
-  { id: 'meta-llama/llama-guard-4-12b', name: 'Llama Guard 4 12B', provider: 'Meta' },
-  
-  // Preview Models
-  { id: 'deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 Distill Llama 70B (preview)', provider: 'DeepSeek / Meta' },
-  { id: 'meta-llama/llama-4-maverick-17b-128e-instruct', name: 'Llama 4 Maverick 17B 128e Instruct (preview)', provider: 'Meta' },
-  { id: 'meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout 17B 16e Instruct (preview)', provider: 'Meta' },
-  { id: 'meta-llama/llama-prompt-guard-2-22m', name: 'Llama Prompt Guard 2 22M (preview)', provider: 'Meta' },
-  { id: 'meta-llama/llama-prompt-guard-2-86m', name: 'Llama Prompt Guard 2 86M (preview)', provider: 'Meta' },
-  { id: 'moonshot/kimi-k2-instruct', name: 'Moonshot Kimi K2 Instruct (preview)', provider: 'Moonshot AI' },
-  { id: 'openai/gpt-oss-120b', name: 'OpenAI GPT OSS 120B (preview)', provider: 'OpenAI' },
-  { id: 'openai/gpt-oss-20b', name: 'OpenAI GPT OSS 20B (preview)', provider: 'OpenAI' },
-  { id: 'qwen/qwen3-32b', name: 'Qwen 3 32B (preview)', provider: 'Alibaba Cloud' },
+  { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant', provider: 'Meta', vision: false },
+  { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile', provider: 'Meta', vision: false },
+
+  // Vision Models (can analyze images)
+  { id: 'meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout 17B (vision)', provider: 'Meta', vision: true },
+  { id: 'meta-llama/llama-4-maverick-17b-128e-instruct', name: 'Llama 4 Maverick 17B (vision)', provider: 'Meta', vision: true },
+
+  // Other Preview Models
+  { id: 'deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 Distill Llama 70B', provider: 'DeepSeek', vision: false },
+  { id: 'qwen/qwen3-32b', name: 'Qwen 3 32B', provider: 'Alibaba', vision: false },
 ];
 
 export default function Settings() {

@@ -209,12 +209,6 @@ function getAllParentTweetContent(tweetElement: Element): string[] {
     return parents;
 }
 
-// Get parent tweet content if this tweet is a reply in a thread (legacy, for single parent)
-function getParentTweetContent(tweetElement: Element): string | null {
-    const parents = getAllParentTweetContent(tweetElement);
-    return parents.length > 0 ? parents[parents.length - 1] : null;
-}
-
 // Function to extract tweet content
 function getTweetContent(tweetElement: Element): {
     text: string;
@@ -230,6 +224,7 @@ function getTweetContent(tweetElement: Element): {
         views: string;
     };
     id: string;
+    articleText: string;
 } {
     // console.log("Getting content for tweet element:", tweetElement);
 
@@ -349,6 +344,30 @@ function getTweetContent(tweetElement: Element): {
         }
     });
 
+    // Find article content (X articles have title and description)
+    let articleText = '';
+    const articleCoverImages = findElementsByTestId(tweetElement, 'article-cover-image');
+    if (articleCoverImages.length > 0) {
+        // Article found - get the parent container and find the text content sibling
+        const coverImage = articleCoverImages[0];
+        const parentContainer = coverImage.parentElement;
+        if (parentContainer) {
+            // The article text is in a sibling div after the cover image container
+            const siblings = Array.from(parentContainer.children);
+            const coverIndex = siblings.indexOf(coverImage);
+
+            // Look at siblings after the cover image
+            for (let i = coverIndex + 1; i < siblings.length; i++) {
+                const sibling = siblings[i];
+                const text = getTextContent(sibling);
+                if (text) {
+                    articleText += text + ' ';
+                }
+            }
+        }
+        articleText = articleText.trim();
+    }
+
     // Find timestamp
     const timeElements = tweetElement.getElementsByTagName('time');
     const timestamp = timeElements[0]?.getAttribute('datetime') || '';
@@ -391,6 +410,7 @@ function getTweetContent(tweetElement: Element): {
         timestamp,
         metrics,
         id,
+        articleText,
     };
 
     // console.log("Final extracted content:", result);
@@ -423,7 +443,11 @@ const tweetObserver = new IntersectionObserver(
                     });
 
                     // If this is a reply (has connector above), get ALL parent context
+                    // Include article text if present
                     let contextualText = tweetContent.text;
+                    if (tweetContent.articleText) {
+                        contextualText += ` [Article: ${tweetContent.articleText}]`;
+                    }
                     if (threadInfo.hasConnectorAbove) {
                         const parentContents = getAllParentTweetContent(tweetElement);
                         if (parentContents.length > 0) {
@@ -472,18 +496,27 @@ const tweetObserver = new IntersectionObserver(
                     debugLog('Stored connection:', {
                         id: tweetContent.id,
                         hasParent: !!parentElement,
-                        hasReply: !!replyElement
+                        hasReply: !!replyElement,
+                        images: tweetContent.images.length
                     });
 
-                    chrome.runtime.sendMessage({
-                        action: 'newTweet',
-                        content: {
-                            ...tweetContent,
-                            text: contextualText,
-                            isReply: threadInfo.hasConnectorAbove,
-                            hasReplyBelow: threadInfo.hasConnectorBelow,
-                        },
-                    });
+                    // Skip analysis only if no text AND no images
+                    const textToAnalyze = contextualText.trim();
+                    const hasContent = textToAnalyze.length >= 5 || tweetContent.images.length > 0;
+
+                    if (!hasContent) {
+                        debugLog('Skipping tweet with no content:', tweetContent.id);
+                    } else {
+                        chrome.runtime.sendMessage({
+                            action: 'newTweet',
+                            content: {
+                                ...tweetContent,
+                                text: contextualText,
+                                isReply: threadInfo.hasConnectorAbove,
+                                hasReplyBelow: threadInfo.hasConnectorBelow,
+                            },
+                        });
+                    }
 
                     // Mark as processed to avoid duplicate analysis
                     tweetElement.setAttribute('data-processed', 'true');
@@ -538,6 +571,7 @@ if (
 interface DebugInfo {
     prompt: string;
     tweetText: string;
+    images: string[];
     rawResponse: string;
 }
 
@@ -588,6 +622,10 @@ function applyBlurEffect(
             e.preventDefault();
             e.stopPropagation();
 
+            const imagesSection = debugInfo.images.length > 0
+                ? `\nIMAGES SENT (${debugInfo.images.length}):\n${debugInfo.images.join('\n')}\n`
+                : '\nIMAGES SENT: none\n';
+
             const debugText = `=== XFeedCleaner Debug Info ===
 
 SYSTEM PROMPT:
@@ -595,7 +633,7 @@ ${debugInfo.prompt}
 
 TWEET TEXT SENT:
 ${debugInfo.tweetText}
-
+${imagesSection}
 MODEL RESPONSE:
 ${debugInfo.rawResponse}
 `;
