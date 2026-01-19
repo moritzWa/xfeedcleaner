@@ -77,6 +77,56 @@ showButtonStyle.textContent = `
   .xfc-tweet.hidden-tweet {
     display: none !important;
   }
+
+  .xfc-verdict-card {
+    position: fixed;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    z-index: 9999;
+    max-width: 160px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #e1e8ed;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    pointer-events: auto;
+  }
+
+  .xfc-verdict-card .xfc-verdict-icon {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .xfc-verdict-card.allowed .xfc-verdict-icon {
+    color: #16a34a;
+  }
+
+  .xfc-verdict-card.filtered .xfc-verdict-icon {
+    color: #dc2626;
+  }
+
+  .xfc-verdict-card .xfc-verdict-reason {
+    color: #536471;
+    font-size: 11px;
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+
+  .xfc-verdict-card .xfc-copy-debug {
+    background: #f7f9fa;
+    border: 1px solid #e1e8ed;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    color: #536471;
+    width: 100%;
+    text-align: center;
+  }
+
+  .xfc-verdict-card .xfc-copy-debug:hover {
+    background: #e8ebed;
+  }
 `;
 document.head.appendChild(showButtonStyle);
 
@@ -86,6 +136,60 @@ function debugLog(...args: unknown[]) {
     if (DEBUG) {
         console.log('[xfc]', ...args);
     }
+}
+
+// Hide sidebar junk modules
+function hideSidebarJunk() {
+    const sidebar = document.querySelector('[data-testid="sidebarColumn"]');
+    if (!sidebar) return;
+
+    // Selectors for junk modules to hide
+    const junkSelectors = [
+        '[data-testid="renew-subscription-module"]', // Premium renewal
+        '[aria-label="Subscribe to Premium"]', // Premium upsell
+        '[aria-label="Trending"]', // Today's News / Trending
+        '[aria-label="Who to follow"]', // Who to follow
+    ];
+
+    junkSelectors.forEach(selector => {
+        const module = sidebar.querySelector(selector);
+        if (module) {
+            // Find the parent container that holds the module
+            let container: Element | null = module.closest('[data-testid="sidebarColumn"] > div > div > div');
+            if (!container) {
+                container = module.parentElement?.parentElement?.parentElement || null;
+            }
+            if (container && container instanceof HTMLElement) {
+                container.style.display = 'none';
+            }
+        }
+    });
+
+    // Also hide any "Get Verified" or subscription prompts
+    sidebar.querySelectorAll('aside, [role="complementary"]').forEach(aside => {
+        const text = aside.textContent?.toLowerCase() || '';
+        if (text.includes('premium') || text.includes('subscribe') || text.includes('verified')) {
+            if (aside instanceof HTMLElement) {
+                aside.style.display = 'none';
+            }
+        }
+    });
+}
+
+// Run sidebar cleanup on page load and watch for changes
+const sidebarObserver = new MutationObserver(() => {
+    hideSidebarJunk();
+});
+
+// Start observing once DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        hideSidebarJunk();
+        sidebarObserver.observe(document.body, { childList: true, subtree: true });
+    });
+} else {
+    hideSidebarJunk();
+    sidebarObserver.observe(document.body, { childList: true, subtree: true });
 }
 
 // In-memory store for tweet connections
@@ -670,6 +774,94 @@ function hideTweet(tweetElement: Element) {
     tweetElement.classList.add('xfc-tweet', 'hidden-tweet');
 }
 
+// Add a verdict card floating to the right of the tweet
+function addVerdictBadge(
+    tweetElement: Element,
+    isFiltered: boolean,
+    reason: string,
+    debugInfo?: DebugInfo
+) {
+    // Skip if already has a card (check via data attribute since card is not a child)
+    const article = tweetElement.closest('article');
+    if (!article || article.hasAttribute('data-xfc-verdict')) return;
+    article.setAttribute('data-xfc-verdict', 'true');
+
+    const card = document.createElement('div');
+    card.className = `xfc-verdict-card ${isFiltered ? 'filtered' : 'allowed'}`;
+
+    // Build card content
+    const iconDiv = document.createElement('div');
+    iconDiv.className = 'xfc-verdict-icon';
+    iconDiv.textContent = isFiltered ? '✗ Filtered' : '✓ Allowed';
+    card.appendChild(iconDiv);
+
+    const reasonDiv = document.createElement('div');
+    reasonDiv.className = 'xfc-verdict-reason';
+    reasonDiv.textContent = reason || 'analyzed';
+    card.appendChild(reasonDiv);
+
+    // Add copy debug button
+    if (debugInfo) {
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'xfc-copy-debug';
+        copyBtn.textContent = '📋 Copy Debug';
+        copyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const imagesSection = debugInfo.images.length > 0
+                ? `\nIMAGES SENT (${debugInfo.images.length}):\n${debugInfo.images.join('\n')}\n`
+                : '\nIMAGES SENT: none\n';
+
+            const debugText = `FILTER DECISION: ${isFiltered ? 'FILTERED' : 'ALLOWED'}
+REASON: ${reason}
+
+PROMPT SENT:
+${debugInfo.prompt}
+
+TWEET TEXT SENT:
+${debugInfo.tweetText}
+${imagesSection}
+MODEL RESPONSE:
+${debugInfo.rawResponse}
+`;
+            navigator.clipboard.writeText(debugText).then(() => {
+                copyBtn.textContent = '✓ Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Copy Debug';
+                }, 1500);
+            });
+        });
+        card.appendChild(copyBtn);
+    }
+
+    // Append card to body and position it next to the tweet
+    document.body.appendChild(card);
+
+    // Position update function
+    const updatePosition = () => {
+        const rect = article.getBoundingClientRect();
+        card.style.top = `${rect.top + 8}px`;
+        card.style.left = `${rect.right + 12}px`;
+    };
+
+    // Initial position
+    updatePosition();
+
+    // Update on scroll (use passive listener for performance)
+    const scrollHandler = () => requestAnimationFrame(updatePosition);
+    window.addEventListener('scroll', scrollHandler, { passive: true });
+
+    // Clean up when article is removed from DOM
+    const observer = new MutationObserver(() => {
+        if (!document.contains(article)) {
+            card.remove();
+            window.removeEventListener('scroll', scrollHandler);
+            observer.disconnect();
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
 // Get all tweets in a thread chain (walks both up and down)
 function getAllThreadTweets(tweetElement: Element): Element[] {
     const allTweets: Element[] = [tweetElement];
@@ -728,7 +920,12 @@ chrome.runtime.onMessage.addListener((message) => {
             `[data-tweet-id="${tweetId}"]`
         );
 
-        if (tweetElement && isBait) {
+        if (!tweetElement) return;
+
+        // Always add verdict card showing the decision
+        addVerdictBadge(tweetElement, isBait, reason, debugInfo);
+
+        if (isBait) {
             chrome.storage.sync.get(['displayMode'], (result) => {
                 const displayMode = result.displayMode || 'blur';
 
