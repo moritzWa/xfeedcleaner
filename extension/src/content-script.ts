@@ -535,8 +535,18 @@ if (
     });
 }
 
+interface DebugInfo {
+    prompt: string;
+    tweetText: string;
+    rawResponse: string;
+}
+
 // Helper function to apply blur effect to a tweet
-function applyBlurEffect(tweetElement: Element, reasons?: string[]) {
+function applyBlurEffect(
+    tweetElement: Element,
+    reason?: string,
+    debugInfo?: DebugInfo
+) {
     // Skip if already blurred
     if (tweetElement.classList.contains('xfc-tweet')) return;
 
@@ -557,12 +567,45 @@ function applyBlurEffect(tweetElement: Element, reasons?: string[]) {
     showButton.textContent = 'Show';
     controlsContainer.appendChild(showButton);
 
-    // Add filter reasons if available
-    if (reasons && reasons.length > 0) {
+    // Add filter reason if available
+    if (reason) {
         const reasonsEl = document.createElement('div');
         reasonsEl.className = 'xfc-reasons';
-        reasonsEl.textContent = `Filtered: ${reasons.join(', ')}`;
+        reasonsEl.textContent = reason;
         controlsContainer.appendChild(reasonsEl);
+    }
+
+    // Add debug button if debug info available
+    if (debugInfo) {
+        const debugButton = document.createElement('button');
+        debugButton.className = 'xfc-show-tweet-button';
+        debugButton.textContent = '📋 Copy Debug';
+        debugButton.style.fontSize = '11px';
+        debugButton.style.padding = '4px 8px';
+        controlsContainer.appendChild(debugButton);
+
+        debugButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const debugText = `=== XFeedCleaner Debug Info ===
+
+SYSTEM PROMPT:
+${debugInfo.prompt}
+
+TWEET TEXT SENT:
+${debugInfo.tweetText}
+
+MODEL RESPONSE:
+${debugInfo.rawResponse}
+`;
+            navigator.clipboard.writeText(debugText).then(() => {
+                debugButton.textContent = '✓ Copied!';
+                setTimeout(() => {
+                    debugButton.textContent = '📋 Copy Debug';
+                }, 2000);
+            });
+        });
     }
 
     // Apply blur effect
@@ -636,7 +679,7 @@ function getAllThreadTweets(tweetElement: Element): Element[] {
 
 chrome.runtime.onMessage.addListener((message) => {
     if (message.action === 'analysisResult') {
-        const { tweetId, isBait, error } = message.result;
+        const { tweetId, isBait, reason, debugInfo, error } = message.result;
 
         if (error) {
             console.error(`Error analyzing tweet ${tweetId}:`, error);
@@ -655,12 +698,13 @@ chrome.runtime.onMessage.addListener((message) => {
                 const threadTweets = getAllThreadTweets(tweetElement);
                 debugLog('Filtering thread:', {
                     tweetId,
-                    threadSize: threadTweets.length
+                    threadSize: threadTweets.length,
+                    reason
                 });
 
-                // Blur/hide the main tweet with reasons
+                // Blur/hide the main tweet with reason and debug info
                 if (displayMode === 'blur') {
-                    applyBlurEffect(tweetElement, message.result.reasons);
+                    applyBlurEffect(tweetElement, reason, debugInfo);
                 } else {
                     hideTweet(tweetElement);
                 }
@@ -670,7 +714,7 @@ chrome.runtime.onMessage.addListener((message) => {
                     if (tweet !== tweetElement) {
                         debugLog('Hiding thread tweet');
                         if (displayMode === 'blur') {
-                            applyBlurEffect(tweet, ['thread filtered']);
+                            applyBlurEffect(tweet, 'Part of filtered thread');
                         } else {
                             hideTweet(tweet);
                         }

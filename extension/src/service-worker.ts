@@ -1,36 +1,7 @@
-// NOTE: these DEFAULT_CRITERIA, SYSTEM_PROMPT_PREFIX, SYSTEM_PROMPT_SUFFIX, and constructFullPrompt
-//       are duplicated in src/lib/constants.ts since we cannot import them from the service worker.
-
-export const DEFAULT_CRITERIA = `- The tweet uses manipulative tactics to gain engagement (engagement bait, rage bait, thirst traps)
-- The tweet is about government politics, elections, political parties, or candidates
-- The tweet is ideological debate: racism, immigration policy, culture wars, DEI controversy, far-left/far-right
-- The tweet is a low-effort reply (emoji-only, "this", "lol", "+1", "W", "L")
-- The tweet is poll-style engagement bait ("hot take", "agree or disagree?", "ratio")
-- The tweet is a generic complaint with no substance ("is X down?", "ugh mondays")
-- The tweet promotes events/meetups unrelated to tech, startups, or AI
-- The tweet is celebrity gossip, sports drama, or reality TV discussion
-`;
-
-export const SYSTEM_PROMPT_PREFIX = `You are a tweet analyzer. Your job is to decide if the content of a tweet is met with the following criteria:`;
-
-export const SYSTEM_PROMPT_SUFFIX = `
-If any of the above criteria are met, the tweet should be considered bait.
-Respond EXCLUSIVELY using one of these formats:
-- "true: reason1, reason2, reason3" (if bait)
-- "false" (if not bait)
-
-Where reasons are 1-3 lowercase keywords from the criteria. Example responses:
-"true: political, divisive"
-"true: sensationalized, manipulative"
-"false"`;
-
-export function constructFullPrompt(criteria: string): string {
-  return `${SYSTEM_PROMPT_PREFIX}
-
-${criteria}
-
-${SYSTEM_PROMPT_SUFFIX}`;
-}
+import {
+  DEFAULT_CRITERIA,
+  constructFullPrompt,
+} from "./lib/constants";
 
 // Polyfill for Firefox
 if (typeof browser === "undefined") {
@@ -43,9 +14,13 @@ async function analyzeWithGroq(
 ): Promise<{
   tweetId: string;
   isBait: boolean;
-  reasons?: string[];
+  reason?: string;
+  debugInfo?: { prompt: string; tweetText: string; rawResponse: string };
   error?: string;
 }> {
+  let fullPrompt = "";
+  let rawResponse = "";
+
   try {
     console.log("Analyzing tweet:", { tweetId, text });
 
@@ -73,7 +48,7 @@ async function analyzeWithGroq(
 
     // Use the stored criteria or fall back to default
     const criteria = promptCriteria || DEFAULT_CRITERIA;
-    const fullPrompt = constructFullPrompt(criteria);
+    fullPrompt = constructFullPrompt(criteria);
 
     // Use selected model or fall back to default
     const model = selectedModel || "gemma2-9b-it";
@@ -99,7 +74,7 @@ async function analyzeWithGroq(
             },
           ],
           temperature: 0,
-          max_tokens: 10,
+          max_tokens: 100,
         }),
       }
     );
@@ -118,30 +93,41 @@ async function analyzeWithGroq(
         tweetId,
         isBait: false,
         error: "Invalid API response",
+        debugInfo: { prompt: fullPrompt, tweetText: text, rawResponse: JSON.stringify(data) },
       };
     }
 
-    const responseContent = data.choices[0].message.content
-      .toLowerCase()
-      .trim();
-    const isBait = responseContent.startsWith("true");
-    let reasons: string[] = [];
+    rawResponse = data.choices[0].message.content;
 
-    if (isBait) {
-      const parts = responseContent.split(":");
-      if (parts.length > 1) {
-        reasons = parts[1]
-          .split(",")
-          .map((r: string) => r.trim())
-          .filter(Boolean);
+    // Parse JSON response
+    let isBait = false;
+    let reason = "";
+
+    try {
+      // Try to extract JSON from response (handle potential extra text)
+      const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        isBait = parsed.filter === true;
+        reason = parsed.reason || "";
+      } else {
+        // Fallback: check if response contains "true" or "filter": true
+        isBait = rawResponse.toLowerCase().includes('"filter": true') ||
+                 rawResponse.toLowerCase().includes('"filter":true');
+        reason = rawResponse;
       }
+    } catch (parseError) {
+      console.error("Failed to parse JSON response:", parseError);
+      // Fallback to old logic
+      isBait = rawResponse.toLowerCase().includes("true");
+      reason = rawResponse;
     }
-    // console.log("Analysis result:", { tweetId, isPolitical, responseContent });
 
     return {
       tweetId,
       isBait,
-      reasons
+      reason,
+      debugInfo: { prompt: fullPrompt, tweetText: text, rawResponse },
     };
   } catch (error) {
     console.error("Error analyzing tweet:", error);
@@ -149,6 +135,7 @@ async function analyzeWithGroq(
       tweetId,
       isBait: false,
       error: (error as Error).message || "Unknown error",
+      debugInfo: { prompt: fullPrompt, tweetText: text, rawResponse },
     };
   }
 }
@@ -175,8 +162,9 @@ browser.runtime.onMessage.addListener((request, sender) => {
             result: {
               tweetId,
               isBait: result.isBait,
-              reasons: result.reasons as string[],
-              error: null,
+              reason: result.reason,
+              debugInfo: result.debugInfo,
+              error: result.error || null,
             },
           });
         }
