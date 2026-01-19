@@ -1,15 +1,14 @@
 // NOTE: these DEFAULT_CRITERIA, SYSTEM_PROMPT_PREFIX, SYSTEM_PROMPT_SUFFIX, and constructFullPrompt
 //       are duplicated in src/lib/constants.ts since we cannot import them from the service worker.
 
-export const DEFAULT_CRITERIA = `- The tweet is not interesting and just making a joke or pointing out something funny
-- The tweet uses manipulative tactics to gain engagement (engagement bait)
-- The tweet is political in nature. It discusses politics, government, political issues, parties, candidates, elections, or any other political topic, be it related to any country or region.
-- The tweet discusses ideologies in relation to politics. Topics such as racism, communism, fascism, nationalism, immigration, anti-immigration, DEI, woke-ism, far-left, far-right, etc.
-- The tweet is a low-effort reply (emoji-only, single word like "this", "lol", "+1", etc.)
-- The tweet is shallow social commentary or poll-style engagement bait ("hot take", "agree or disagree?", "X vs Y" comparisons, "is this enough money?", generic lifestyle debates)
-- The tweet is a generic complaint or status update with no substance ("is X down?", "ugh mondays", etc.)
-- The tweet promotes events, meetups, or announcements unrelated to technology, startups, AI, or software engineering
-- The tweet does not provide any novel insight, interesting information, technical content, or thought-provoking ideas
+export const DEFAULT_CRITERIA = `- The tweet uses manipulative tactics to gain engagement (engagement bait, rage bait, thirst traps)
+- The tweet is about government politics, elections, political parties, or candidates
+- The tweet is ideological debate: racism, immigration policy, culture wars, DEI controversy, far-left/far-right
+- The tweet is a low-effort reply (emoji-only, "this", "lol", "+1", "W", "L")
+- The tweet is poll-style engagement bait ("hot take", "agree or disagree?", "ratio")
+- The tweet is a generic complaint with no substance ("is X down?", "ugh mondays")
+- The tweet promotes events/meetups unrelated to tech, startups, or AI
+- The tweet is celebrity gossip, sports drama, or reality TV discussion
 `;
 
 export const SYSTEM_PROMPT_PREFIX = `You are a tweet analyzer. Your job is to decide if the content of a tweet is met with the following criteria:`;

@@ -167,28 +167,52 @@ function detectThreadConnector(tweetElement: Element): {
     return { hasConnectorAbove, hasConnectorBelow };
 }
 
-// Get parent tweet content if this tweet is a reply in a thread
-function getParentTweetContent(tweetElement: Element): string | null {
-    const cellInner = tweetElement.closest('[data-testid="cellInnerDiv"]');
-    if (!cellInner) return null;
+// Get all parent tweets in a thread (walks up the entire chain)
+function getAllParentTweetContent(tweetElement: Element): string[] {
+    const parents: string[] = [];
+    let currentCell = tweetElement.closest('[data-testid="cellInnerDiv"]');
 
-    // Get previous sibling cellInnerDiv
-    const prevCell = cellInner.previousElementSibling;
-    if (!prevCell || prevCell.getAttribute('data-testid') !== 'cellInnerDiv') {
-        return null;
+    while (currentCell) {
+        const prevCell = currentCell.previousElementSibling;
+        if (!prevCell || prevCell.getAttribute('data-testid') !== 'cellInnerDiv') {
+            break;
+        }
+
+        const parentTweet = prevCell.querySelector('[data-testid="tweet"]');
+        if (!parentTweet) break;
+
+        // Check if this parent has a connector below (meaning it's part of the thread)
+        // First check stored attribute (more reliable), then fall back to visual detection
+        let hasConnectorBelow = parentTweet.getAttribute('data-has-connector-below') === 'true';
+        if (!hasConnectorBelow) {
+            // Visual detection fallback
+            const detected = detectThreadConnector(parentTweet);
+            hasConnectorBelow = detected.hasConnectorBelow;
+        }
+
+        // Extract text from parent tweet
+        const textEl = parentTweet.querySelector('[data-testid="tweetText"]');
+        const authorEl = parentTweet.querySelector('[data-testid="User-Name"]');
+
+        const text = textEl?.textContent?.trim() || '';
+        const author = authorEl?.textContent?.split('·')[0]?.trim() || '';
+
+        // Add to beginning of array (oldest first)
+        parents.unshift(`[Thread @${author}: ${text}]`);
+
+        // If this parent doesn't have a connector below, it's the thread root - stop here
+        if (!hasConnectorBelow) break;
+
+        currentCell = prevCell;
     }
 
-    const parentTweet = prevCell.querySelector('[data-testid="tweet"]');
-    if (!parentTweet) return null;
+    return parents;
+}
 
-    // Extract text from parent tweet
-    const textEl = parentTweet.querySelector('[data-testid="tweetText"]');
-    const authorEl = parentTweet.querySelector('[data-testid="User-Name"]');
-
-    const text = textEl?.textContent?.trim() || '';
-    const author = authorEl?.textContent?.split('·')[0]?.trim() || '';
-
-    return `[Parent @${author}: ${text}]`;
+// Get parent tweet content if this tweet is a reply in a thread (legacy, for single parent)
+function getParentTweetContent(tweetElement: Element): string | null {
+    const parents = getAllParentTweetContent(tweetElement);
+    return parents.length > 0 ? parents[parents.length - 1] : null;
 }
 
 // Function to extract tweet content
@@ -386,19 +410,25 @@ const tweetObserver = new IntersectionObserver(
 
                     // Detect thread context
                     const threadInfo = detectThreadConnector(tweetElement);
+
+                    // Store connector info for fallback detection by other tweets
+                    if (threadInfo.hasConnectorBelow) {
+                        tweetElement.setAttribute('data-has-connector-below', 'true');
+                    }
+
                     debugLog('Tweet processed:', {
                         author: tweetContent.author,
                         text: tweetContent.text.slice(0, 50) + '...',
                         threadInfo
                     });
 
-                    // If this is a reply (has connector above), get parent context
+                    // If this is a reply (has connector above), get ALL parent context
                     let contextualText = tweetContent.text;
                     if (threadInfo.hasConnectorAbove) {
-                        const parentContent = getParentTweetContent(tweetElement);
-                        if (parentContent) {
-                            contextualText = `${parentContent} [Reply @${tweetContent.author}: ${tweetContent.text}]`;
-                            debugLog('Combined context:', contextualText.slice(0, 100) + '...');
+                        const parentContents = getAllParentTweetContent(tweetElement);
+                        if (parentContents.length > 0) {
+                            contextualText = `${parentContents.join(' ')} [Reply @${tweetContent.author}: ${tweetContent.text}]`;
+                            debugLog('Combined context:', contextualText.slice(0, 150) + '...', `(${parentContents.length} parents)`);
                         }
                     }
 
@@ -559,6 +589,51 @@ function hideTweet(tweetElement: Element) {
     tweetElement.classList.add('xfc-tweet', 'hidden-tweet');
 }
 
+// Get all tweets in a thread chain (walks both up and down)
+function getAllThreadTweets(tweetElement: Element): Element[] {
+    const allTweets: Element[] = [tweetElement];
+    const cellInner = tweetElement.closest('[data-testid="cellInnerDiv"]');
+    if (!cellInner) return allTweets;
+
+    // Walk up to find all parent tweets
+    let upCell: Element | null = cellInner;
+    while (upCell) {
+        const prevCell = upCell.previousElementSibling as Element | null;
+        if (!prevCell || prevCell.getAttribute('data-testid') !== 'cellInnerDiv') break;
+
+        const parentTweet = prevCell.querySelector('[data-testid="tweet"]');
+        if (!parentTweet) break;
+
+        // Check if connected via connector
+        const hasConnectorBelow = parentTweet.getAttribute('data-has-connector-below') === 'true' ||
+            detectThreadConnector(parentTweet).hasConnectorBelow;
+
+        if (!hasConnectorBelow) break;
+
+        allTweets.unshift(parentTweet);
+        upCell = prevCell;
+    }
+
+    // Walk down to find all reply tweets
+    let downCell: Element | null = cellInner;
+    while (downCell) {
+        const nextCell = downCell.nextElementSibling as Element | null;
+        if (!nextCell || nextCell.getAttribute('data-testid') !== 'cellInnerDiv') break;
+
+        const replyTweet = nextCell.querySelector('[data-testid="tweet"]');
+        if (!replyTweet) break;
+
+        // Check if connected via connector
+        const { hasConnectorAbove } = detectThreadConnector(replyTweet);
+        if (!hasConnectorAbove) break;
+
+        allTweets.push(replyTweet);
+        downCell = nextCell;
+    }
+
+    return allTweets;
+}
+
 chrome.runtime.onMessage.addListener((message) => {
     if (message.action === 'analysisResult') {
         const { tweetId, isBait, error } = message.result;
@@ -576,40 +651,31 @@ chrome.runtime.onMessage.addListener((message) => {
             chrome.storage.sync.get(['displayMode'], (result) => {
                 const displayMode = result.displayMode || 'blur';
 
-                // Get connections from our in-memory Map
-                const connection = tweetConnections.get(tweetId);
-                debugLog('Filtering tweet:', {
+                // Get ALL tweets in this thread chain
+                const threadTweets = getAllThreadTweets(tweetElement);
+                debugLog('Filtering thread:', {
                     tweetId,
-                    hasConnection: !!connection,
-                    hasParent: !!connection?.parentElement,
-                    hasReply: !!connection?.replyElement
+                    threadSize: threadTweets.length
                 });
 
-                // Blur/hide the main tweet
+                // Blur/hide the main tweet with reasons
                 if (displayMode === 'blur') {
                     applyBlurEffect(tweetElement, message.result.reasons);
                 } else {
                     hideTweet(tweetElement);
                 }
 
-                // Also blur/hide connected tweets from our stored references
-                if (connection?.parentElement) {
-                    debugLog('Hiding parent tweet (from stored reference)');
-                    if (displayMode === 'blur') {
-                        applyBlurEffect(connection.parentElement, ['thread filtered']);
-                    } else {
-                        hideTweet(connection.parentElement);
+                // Blur/hide all other tweets in the thread
+                threadTweets.forEach((tweet) => {
+                    if (tweet !== tweetElement) {
+                        debugLog('Hiding thread tweet');
+                        if (displayMode === 'blur') {
+                            applyBlurEffect(tweet, ['thread filtered']);
+                        } else {
+                            hideTweet(tweet);
+                        }
                     }
-                }
-
-                if (connection?.replyElement) {
-                    debugLog('Hiding reply tweet (from stored reference)');
-                    if (displayMode === 'blur') {
-                        applyBlurEffect(connection.replyElement, ['thread filtered']);
-                    } else {
-                        hideTweet(connection.replyElement);
-                    }
-                }
+                });
             });
         }
     }
