@@ -3,6 +3,7 @@
 export interface DebugInfo {
     prompt: string;
     tweetText: string;
+    author: string;
     images: string[];
     rawResponse: string;
 }
@@ -102,6 +103,19 @@ export function hideTweet(tweetElement: Element) {
     tweetElement.classList.add('xfc-tweet', 'hidden-tweet');
 }
 
+// Detect if Twitter is in dark mode
+function isDarkMode(): boolean {
+    const bodyBg = getComputedStyle(document.body).backgroundColor;
+    // Parse RGB values - dark mode has low RGB values
+    const match = bodyBg.match(/\d+/g);
+    if (match) {
+        const [r, g, b] = match.map(Number);
+        // If average brightness is below 128, it's dark mode
+        return (r + g + b) / 3 < 128;
+    }
+    return false;
+}
+
 // Add a verdict card floating to the right of the tweet
 export function addVerdictBadge(
     tweetElement: Element,
@@ -114,8 +128,9 @@ export function addVerdictBadge(
     if (!article || article.hasAttribute('data-xfc-verdict')) return;
     article.setAttribute('data-xfc-verdict', 'true');
 
+    const darkMode = isDarkMode();
     const card = document.createElement('div');
-    card.className = `xfc-verdict-card ${isFiltered ? 'filtered' : 'allowed'}`;
+    card.className = `xfc-verdict-card ${isFiltered ? 'filtered' : 'allowed'}${darkMode ? ' dark' : ''}`;
 
     // Build card content
     const iconDiv = document.createElement('div');
@@ -128,12 +143,41 @@ export function addVerdictBadge(
     reasonDiv.textContent = reason || 'analyzed';
     card.appendChild(reasonDiv);
 
-    // Add copy debug button
+    // Add copy buttons if debug info available
     if (debugInfo) {
-        const copyBtn = document.createElement('button');
-        copyBtn.className = 'xfc-copy-debug';
-        copyBtn.textContent = '📋 Copy Debug';
-        copyBtn.addEventListener('click', (e) => {
+        // Button container for side-by-side layout
+        const btnContainer = document.createElement('div');
+        btnContainer.style.display = 'flex';
+        btnContainer.style.gap = '4px';
+
+        // Copy Tweet button - tweet content + AI decision
+        const copyTweetBtn = document.createElement('button');
+        copyTweetBtn.className = 'xfc-copy-debug';
+        copyTweetBtn.textContent = '📝 Tweet';
+        copyTweetBtn.title = 'Copy tweet + AI decision';
+        copyTweetBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const imagesSection = debugInfo.images.length > 0
+                ? `\nImages: ${debugInfo.images.length}`
+                : '';
+            const decision = isFiltered ? 'FILTERED' : 'ALLOWED';
+            const tweetContent = `@${debugInfo.author}: ${debugInfo.tweetText}${imagesSection}\n\nAI Decision: ${decision} - "${reason}"`;
+            navigator.clipboard.writeText(tweetContent).then(() => {
+                copyTweetBtn.textContent = '✓';
+                setTimeout(() => {
+                    copyTweetBtn.textContent = '📝 Tweet';
+                }, 1500);
+            });
+        });
+        btnContainer.appendChild(copyTweetBtn);
+
+        // Copy Debug button - full debug info
+        const copyDebugBtn = document.createElement('button');
+        copyDebugBtn.className = 'xfc-copy-debug';
+        copyDebugBtn.textContent = '🔧 Debug';
+        copyDebugBtn.title = 'Copy full debug info';
+        copyDebugBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             const imagesSection = debugInfo.images.length > 0
@@ -147,19 +191,21 @@ PROMPT SENT:
 ${debugInfo.prompt}
 
 TWEET TEXT SENT:
-${debugInfo.tweetText}
+@${debugInfo.author}: ${debugInfo.tweetText}
 ${imagesSection}
 MODEL RESPONSE:
 ${debugInfo.rawResponse}
 `;
             navigator.clipboard.writeText(debugText).then(() => {
-                copyBtn.textContent = '✓ Copied!';
+                copyDebugBtn.textContent = '✓';
                 setTimeout(() => {
-                    copyBtn.textContent = '📋 Copy Debug';
+                    copyDebugBtn.textContent = '🔧 Debug';
                 }, 1500);
             });
         });
-        card.appendChild(copyBtn);
+        btnContainer.appendChild(copyDebugBtn);
+
+        card.appendChild(btnContainer);
     }
 
     // Append card to body and position it next to the tweet

@@ -17,12 +17,13 @@ const VISION_MODELS = [
 async function analyzeWithGroq(
   text: string,
   tweetId: string,
+  author: string,
   images: string[] = []
 ): Promise<{
   tweetId: string;
   isBait: boolean;
   reason?: string;
-  debugInfo?: { prompt: string; tweetText: string; images: string[]; rawResponse: string };
+  debugInfo?: { prompt: string; tweetText: string; author: string; images: string[]; rawResponse: string };
   error?: string;
 }> {
   let fullPrompt = "";
@@ -65,12 +66,14 @@ async function analyzeWithGroq(
     const hasImages = images.length > 0;
 
     // Build user message content based on model capabilities
+    // Include author for context (helps with known accounts)
+    const tweetWithAuthor = author ? `@${author}: ${text}` : text;
     let userContent: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
 
     if (isVisionModel && hasImages) {
       // Vision model with images - use multimodal format (send only first image for simplicity)
       userContent = [
-        { type: "text", text: text || "Analyze this tweet image:" },
+        { type: "text", text: tweetWithAuthor || "Analyze this tweet image:" },
         {
           type: "image_url" as const,
           image_url: { url: images[0] },
@@ -78,7 +81,7 @@ async function analyzeWithGroq(
       ];
     } else {
       // Text-only
-      userContent = text;
+      userContent = tweetWithAuthor;
     }
 
     const response = await fetch(
@@ -121,7 +124,7 @@ async function analyzeWithGroq(
         tweetId,
         isBait: false,
         error: "Invalid API response",
-        debugInfo: { prompt: fullPrompt, tweetText: text, images, rawResponse: JSON.stringify(data) },
+        debugInfo: { prompt: fullPrompt, tweetText: text, author, images, rawResponse: JSON.stringify(data) },
       };
     }
 
@@ -155,7 +158,7 @@ async function analyzeWithGroq(
       tweetId,
       isBait,
       reason,
-      debugInfo: { prompt: fullPrompt, tweetText: text, images, rawResponse },
+      debugInfo: { prompt: fullPrompt, tweetText: text, author, images, rawResponse },
     };
   } catch (error) {
     console.error("Error analyzing tweet:", error);
@@ -163,7 +166,7 @@ async function analyzeWithGroq(
       tweetId,
       isBait: false,
       error: (error as Error).message || "Unknown error",
-      debugInfo: { prompt: fullPrompt, tweetText: text, images, rawResponse },
+      debugInfo: { prompt: fullPrompt, tweetText: text, author, images, rawResponse },
     };
   }
 }
@@ -180,10 +183,11 @@ browser.runtime.onMessage.addListener((request, sender) => {
       }
 
       const tweetId = request.content.id;
+      const author = request.content.author || "";
       const images = request.content.images || [];
 
       // Continue with analysis...
-      analyzeWithGroq(request.content.text, tweetId, images).then((result) => {
+      analyzeWithGroq(request.content.text, tweetId, author, images).then((result) => {
         console.log("Analysis result:", result);
         if (sender.tab && sender.tab.id) {
           browser.tabs.sendMessage(sender.tab.id, {

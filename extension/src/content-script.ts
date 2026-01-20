@@ -98,11 +98,18 @@ showButtonStyle.textContent = `
     padding: 6px 10px;
     border-radius: 6px;
     z-index: 9999;
-    max-width: 160px;
+    max-width: 180px;
     background: rgba(255, 255, 255, 0.95);
     border: 1px solid #e1e8ed;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     pointer-events: auto;
+  }
+
+  /* Dark mode styles */
+  .xfc-verdict-card.dark {
+    background: rgba(32, 35, 39, 0.95);
+    border-color: #38444d;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
   }
 
   .xfc-verdict-card .xfc-verdict-icon {
@@ -125,20 +132,35 @@ showButtonStyle.textContent = `
     margin-bottom: 6px;
   }
 
+  .xfc-verdict-card.dark .xfc-verdict-reason {
+    color: #8b98a5;
+  }
+
   .xfc-verdict-card .xfc-copy-debug {
     background: #f7f9fa;
     border: 1px solid #e1e8ed;
     border-radius: 4px;
-    padding: 4px 8px;
+    padding: 4px 6px;
     font-size: 10px;
     cursor: pointer;
     color: #536471;
-    width: 100%;
     text-align: center;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  .xfc-verdict-card.dark .xfc-copy-debug {
+    background: #2f3336;
+    border-color: #38444d;
+    color: #8b98a5;
   }
 
   .xfc-verdict-card .xfc-copy-debug:hover {
     background: #e8ebed;
+  }
+
+  .xfc-verdict-card.dark .xfc-copy-debug:hover {
+    background: #3a3f42;
   }
 `;
 document.head.appendChild(showButtonStyle);
