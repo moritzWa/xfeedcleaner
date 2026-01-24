@@ -1,14 +1,13 @@
-export const DEFAULT_CRITERIA = `FILTER these types of tweets:
-- Engagement bait: rage bait, thirst traps, "hot take", "agree or disagree?", ratio requests
+export const DEFAULT_BAD_CRITERIA = `- Engagement bait: rage bait, thirst traps, "hot take", "agree or disagree?", ratio requests
 - Vapid musings: "ugh mondays", "vibes", trend-riding with no actual thought or insight
+- Personal updates without insight: moving announcements, visa news, team offsites, company culture posts
 - Electoral politics: elections, political parties, candidates, voting, partisan debates
 - Culture war content: racism debates, immigration policy, DEI controversy, left vs right ideology
 - Low-effort replies: emoji-only, "this", "lol", "+1", "W", "L", "ratio"
 - Generic complaints: "is X down?", venting without substance
-- Celebrity gossip, sports drama, reality TV
+- Celebrity gossip, sports drama, reality TV`;
 
-DO NOT FILTER (always allow):
-- Tech, programming, software, AI/ML, startups, founder content
+export const DEFAULT_GOOD_CRITERIA = `- Tech, programming, software, AI/ML, startups, founder content
 - Economics, finance, markets, investing, business news, global trade
 - Intellectual discussion: philosophy, science, rationality, ideas
 - Wisdom, quotes, or life lessons - especially from founders, investors, or notable figures
@@ -21,24 +20,45 @@ DO NOT FILTER (always allow):
 
 Note: Economics and business news mentioning governments or politicians in economic context is NOT political content - allow it.`;
 
-export const SYSTEM_PROMPT_PREFIX = `You are a tweet filter. Decide if this tweet should be filtered based on:`;
+export const DEFAULT_HIGHLIGHT_CRITERIA = `- Tweets that invite discussion or debate on design, product, or AI/ML topics
+- Insightful opinions or hot takes on product strategy, UX, or design systems
+- AI research breakthroughs, new models, or technical deep dives
+- Thought-provoking questions about building products or startups
+- Contrarian or novel perspectives on tech industry trends`;
+
+export const SYSTEM_PROMPT_PREFIX = `You are a tweet classifier. Classify this tweet into one of three categories based on the criteria below.`;
 
 export const SYSTEM_PROMPT_SUFFIX = `
-Respond in JSON: {"filter": true/false, "reason": "7-12 word explanation"}
+Respond in JSON: {"reason": "7-12 word explanation", "verdict": "filtered" | "allowed" | "highlighted"}
+
+Classification rules:
+1. If tweet matches FILTER criteria → "filtered"
+2. If tweet matches HIGHLIGHT criteria → "highlighted"
+3. If tweet matches ALLOW criteria → "allowed"
 
 Examples:
-{"filter": true, "reason": "electoral politics discussing voting and partisan candidates"}
-{"filter": true, "reason": "engagement bait asking followers to ratio this post"}
-{"filter": true, "reason": "vapid musing about vibes with no real insight"}
-{"filter": false, "reason": "useful tech workflow tip for developer productivity"}
-{"filter": false, "reason": "founder sharing exciting startup product update and roadmap"}
-{"filter": false, "reason": "meaningful quote about excellence from notable figure"}
-{"filter": false, "reason": "economics news about global markets and investment trends"}`;
+{"reason": "electoral politics discussing voting and partisan candidates", "verdict": "filtered"}
+{"reason": "engagement bait asking followers to ratio this post", "verdict": "filtered"}
+{"reason": "useful tech workflow tip for developer productivity", "verdict": "allowed"}
+{"reason": "founder sharing startup product update and roadmap", "verdict": "allowed"}
+{"reason": "thought-provoking question about AI product design choices", "verdict": "highlighted"}
+{"reason": "insightful debate on UX patterns for complex workflows", "verdict": "highlighted"}`;
 
-export function constructFullPrompt(criteria: string): string {
+export function constructFullPrompt(
+  badCriteria: string,
+  goodCriteria: string,
+  highlightCriteria: string
+): string {
   return `${SYSTEM_PROMPT_PREFIX}
 
-${criteria}
+FILTER these tweets:
+${badCriteria}
+
+ALLOW these tweets:
+${goodCriteria}
+
+HIGHLIGHT these tweets (most interesting, discussion-worthy):
+${highlightCriteria}
 
 ${SYSTEM_PROMPT_SUFFIX}`;
 }

@@ -125,6 +125,20 @@ showButtonStyle.textContent = `
     color: #dc2626;
   }
 
+  .xfc-verdict-card.highlighted {
+    border: 2px solid #16a34a;
+    box-shadow: 0 1px 4px rgba(22, 163, 74, 0.2);
+  }
+
+  .xfc-verdict-card.highlighted.dark {
+    border-color: #22c55e;
+    box-shadow: 0 1px 4px rgba(34, 197, 94, 0.3);
+  }
+
+  .xfc-verdict-card.highlighted .xfc-verdict-icon {
+    color: #16a34a;
+  }
+
   .xfc-verdict-card .xfc-verdict-reason {
     color: #536471;
     font-size: 13px;
@@ -337,7 +351,7 @@ if (
 
 chrome.runtime.onMessage.addListener((message) => {
     if (message.action === 'analysisResult') {
-        const { tweetId, isBait, reason, debugInfo, error } = message.result;
+        const { tweetId, verdict, reason, debugInfo, error } = message.result;
 
         if (error) {
             console.error(`Error analyzing tweet ${tweetId}:`, error);
@@ -351,9 +365,10 @@ chrome.runtime.onMessage.addListener((message) => {
         if (!tweetElement) return;
 
         // Always add verdict card showing the decision
-        addVerdictBadge(tweetElement, isBait, reason, debugInfo);
+        addVerdictBadge(tweetElement, verdict, reason, debugInfo);
 
-        if (isBait) {
+        // Only apply blur/hide for filtered tweets
+        if (verdict === 'filtered') {
             chrome.storage.sync.get(['displayMode'], (result) => {
                 const displayMode = result.displayMode || 'blur';
 

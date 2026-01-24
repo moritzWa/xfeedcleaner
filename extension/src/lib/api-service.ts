@@ -1,5 +1,7 @@
+export type Verdict = 'filtered' | 'allowed' | 'highlighted';
+
 export interface AnalyzeResponse {
-  filter: boolean;
+  verdict: Verdict;
   reason: string;
 }
 
@@ -8,7 +10,9 @@ export interface AnalyzeRequest {
   tweetId: string;
   author?: string;
   images?: string[];
-  criteria?: string;
+  badCriteria: string;
+  goodCriteria: string;
+  highlightCriteria: string;
 }
 
 const API_URL = process.env.NODE_ENV === 'development'

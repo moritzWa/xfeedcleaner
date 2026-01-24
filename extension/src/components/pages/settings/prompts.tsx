@@ -1,85 +1,154 @@
 import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import {
-  DEFAULT_CRITERIA,
-  SYSTEM_PROMPT_PREFIX,
-  SYSTEM_PROMPT_SUFFIX
+  DEFAULT_BAD_CRITERIA,
+  DEFAULT_GOOD_CRITERIA,
+  DEFAULT_HIGHLIGHT_CRITERIA,
 } from '@/lib/constants';
 
+interface CriteriaState {
+  bad: string;
+  good: string;
+  highlight: string;
+}
+
 export function PromptsSettings() {
-  const [criteria, setCriteria] = useState(DEFAULT_CRITERIA);
-  const [isDefault, setIsDefault] = useState(true);
+  const [criteria, setCriteria] = useState<CriteriaState>({
+    bad: DEFAULT_BAD_CRITERIA,
+    good: DEFAULT_GOOD_CRITERIA,
+    highlight: DEFAULT_HIGHLIGHT_CRITERIA,
+  });
+
+  const [isDefault, setIsDefault] = useState({
+    bad: true,
+    good: true,
+    highlight: true,
+  });
 
   useEffect(() => {
-    chrome.storage.sync.get(['promptCriteria'], (result) => {
-      if (result.promptCriteria) {
-        setCriteria(result.promptCriteria);
-        setIsDefault(false);
+    chrome.storage.sync.get(
+      ['badCriteria', 'goodCriteria', 'highlightCriteria'],
+      (result) => {
+        setCriteria({
+          bad: result.badCriteria || DEFAULT_BAD_CRITERIA,
+          good: result.goodCriteria || DEFAULT_GOOD_CRITERIA,
+          highlight: result.highlightCriteria || DEFAULT_HIGHLIGHT_CRITERIA,
+        });
+        setIsDefault({
+          bad: !result.badCriteria || result.badCriteria === DEFAULT_BAD_CRITERIA,
+          good: !result.goodCriteria || result.goodCriteria === DEFAULT_GOOD_CRITERIA,
+          highlight: !result.highlightCriteria || result.highlightCriteria === DEFAULT_HIGHLIGHT_CRITERIA,
+        });
       }
-    });
+    );
   }, []);
 
-  const handleCriteriaChange = (value: string) => {
-    setCriteria(value);
-    setIsDefault(value === DEFAULT_CRITERIA);
-    chrome.storage.sync.set({ promptCriteria: value });
+  const handleChange = (
+    type: 'bad' | 'good' | 'highlight',
+    value: string
+  ) => {
+    setCriteria((prev) => ({ ...prev, [type]: value }));
+
+    const defaults = {
+      bad: DEFAULT_BAD_CRITERIA,
+      good: DEFAULT_GOOD_CRITERIA,
+      highlight: DEFAULT_HIGHLIGHT_CRITERIA,
+    };
+    setIsDefault((prev) => ({ ...prev, [type]: value === defaults[type] }));
+
+    const storageKey = {
+      bad: 'badCriteria',
+      good: 'goodCriteria',
+      highlight: 'highlightCriteria',
+    }[type];
+    chrome.storage.sync.set({ [storageKey]: value });
   };
 
-  const resetToDefault = () => {
-    handleCriteriaChange(DEFAULT_CRITERIA);
+  const resetToDefault = (type: 'bad' | 'good' | 'highlight') => {
+    const defaults = {
+      bad: DEFAULT_BAD_CRITERIA,
+      good: DEFAULT_GOOD_CRITERIA,
+      highlight: DEFAULT_HIGHLIGHT_CRITERIA,
+    };
+    handleChange(type, defaults[type]);
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Prompt Settings</h2>
-        {!isDefault && (
-          <button
-            onClick={resetToDefault}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            Reset to Default
-          </button>
-        )}
+    <div className="space-y-8">
+      {/* Filter Criteria */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-gray-900 font-semibold">Filter Criteria</Label>
+            <p className="text-xs text-gray-500 mt-0.5">Tweets matching these will be blurred/hidden</p>
+          </div>
+          {!isDefault.bad && (
+            <button
+              onClick={() => resetToDefault('bad')}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+        <textarea
+          value={criteria.bad}
+          onChange={(e) => handleChange('bad', e.target.value)}
+          className="w-full h-40 p-3 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+          placeholder="Enter filter criteria..."
+        />
       </div>
 
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <Label className="text-gray-700">System Prompt</Label>
-            <span className="text-xs text-gray-500">(fixed)</span>
+      {/* Allow Criteria */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-gray-900 font-semibold">Allow Criteria</Label>
+            <p className="text-xs text-gray-500 mt-0.5">Tweets matching these will be shown normally</p>
           </div>
-          <div className="p-4 bg-gray-100 rounded-md text-sm text-gray-600">
-            {SYSTEM_PROMPT_PREFIX}
-          </div>
+          {!isDefault.good && (
+            <button
+              onClick={() => resetToDefault('good')}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              Reset
+            </button>
+          )}
         </div>
+        <textarea
+          value={criteria.good}
+          onChange={(e) => handleChange('good', e.target.value)}
+          className="w-full h-40 p-3 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+          placeholder="Enter allow criteria..."
+        />
+      </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <Label className="text-gray-700">Detection Criteria</Label>
-            <span className="text-xs text-gray-500">(editable)</span>
+      {/* Highlight Criteria */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-gray-900 font-semibold">Highlight Criteria</Label>
+            <p className="text-xs text-gray-500 mt-0.5">Tweets matching these will be highlighted with a green border</p>
           </div>
-          <textarea
-            value={criteria}
-            onChange={(e) => handleCriteriaChange(e.target.value)}
-            className="w-full h-48 p-4 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-black"
-            placeholder="Enter criteria..."
-          />
+          {!isDefault.highlight && (
+            <button
+              onClick={() => resetToDefault('highlight')}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              Reset
+            </button>
+          )}
         </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <Label className="text-gray-700">System Prompt</Label>
-            <span className="text-xs text-gray-500">(fixed)</span>
-          </div>
-          <div className="p-4 bg-gray-100 rounded-md text-sm text-gray-600">
-            {SYSTEM_PROMPT_SUFFIX}
-          </div>
-        </div>
+        <textarea
+          value={criteria.highlight}
+          onChange={(e) => handleChange('highlight', e.target.value)}
+          className="w-full h-40 p-3 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="Enter highlight criteria..."
+        />
       </div>
 
       <div className="text-sm text-gray-500">
-        Note: The system will always return true/false based on these criteria.
+        Priority: Filter → Highlight → Allow. Tweets are classified in this order.
       </div>
     </div>
   );

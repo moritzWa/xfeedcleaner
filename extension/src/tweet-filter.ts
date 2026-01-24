@@ -1,5 +1,7 @@
 // Tweet filtering UI - blur, hide, and verdict cards
 
+import type { Verdict } from './lib/api-service';
+
 export interface DebugInfo {
     prompt: string;
     tweetText: string;
@@ -78,10 +80,23 @@ function isDarkMode(): boolean {
     return false;
 }
 
+// Get verdict display info
+function getVerdictDisplay(verdict: Verdict): { icon: string; label: string } {
+    switch (verdict) {
+        case 'filtered':
+            return { icon: '✗', label: 'Filtered' };
+        case 'highlighted':
+            return { icon: '★', label: 'Highlighted' };
+        case 'allowed':
+        default:
+            return { icon: '✓', label: 'Allowed' };
+    }
+}
+
 // Add a verdict card floating to the right of the tweet
 export function addVerdictBadge(
     tweetElement: Element,
-    isFiltered: boolean,
+    verdict: Verdict,
     reason: string,
     debugInfo?: DebugInfo
 ) {
@@ -92,12 +107,13 @@ export function addVerdictBadge(
 
     const darkMode = isDarkMode();
     const card = document.createElement('div');
-    card.className = `xfc-verdict-card ${isFiltered ? 'filtered' : 'allowed'}${darkMode ? ' dark' : ''}`;
+    card.className = `xfc-verdict-card ${verdict}${darkMode ? ' dark' : ''}`;
 
     // Build card content
+    const { icon, label } = getVerdictDisplay(verdict);
     const iconDiv = document.createElement('div');
     iconDiv.className = 'xfc-verdict-icon';
-    iconDiv.textContent = isFiltered ? '✗ Filtered' : '✓ Allowed';
+    iconDiv.textContent = `${icon} ${label}`;
     card.appendChild(iconDiv);
 
     const reasonDiv = document.createElement('div');
@@ -123,7 +139,7 @@ export function addVerdictBadge(
             const imagesSection = debugInfo.images.length > 0
                 ? `\nImages: ${debugInfo.images.length}`
                 : '';
-            const decision = isFiltered ? 'FILTERED' : 'ALLOWED';
+            const decision = verdict.toUpperCase();
             const tweetContent = `@${debugInfo.author}: ${debugInfo.tweetText}${imagesSection}\n\nAI Decision: ${decision} - "${reason}"`;
             navigator.clipboard.writeText(tweetContent).then(() => {
                 copyTweetBtn.textContent = '✓';
@@ -146,7 +162,7 @@ export function addVerdictBadge(
                 ? `\nIMAGES SENT (${debugInfo.images.length}):\n${debugInfo.images.join('\n')}\n`
                 : '\nIMAGES SENT: none\n';
 
-            const debugText = `FILTER DECISION: ${isFiltered ? 'FILTERED' : 'ALLOWED'}
+            const debugText = `VERDICT: ${verdict.toUpperCase()}
 REASON: ${reason}
 
 PROMPT SENT:

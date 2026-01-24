@@ -13,38 +13,41 @@ const MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
 // Zod schema for structured output
 const TweetAnalysisSchema = z.object({
-  filter: z.boolean(),
+  verdict: z.enum(['filtered', 'allowed', 'highlighted']),
   reason: z.string(),
 });
 
 type TweetAnalysis = z.infer<typeof TweetAnalysisSchema>;
 
 // Fixed system prompt prefix and suffix (not editable by users)
-const SYSTEM_PROMPT_PREFIX = `You are a tweet filter. Decide if this tweet should be filtered based on:`;
+const SYSTEM_PROMPT_PREFIX = `You are a tweet classifier. Classify this tweet into one of three categories based on the criteria below.`;
 
 const SYSTEM_PROMPT_SUFFIX = `
-Respond in JSON: {"filter": true/false, "reason": "brief 4-8 word explanation"}
+Respond in JSON: {"reason": "7-12 word explanation", "verdict": "filtered" | "allowed" | "highlighted"}
+
+Classification rules:
+1. If tweet matches FILTER criteria → "filtered"
+2. If tweet matches HIGHLIGHT criteria → "highlighted"
+3. If tweet matches ALLOW criteria → "allowed"
 
 Examples:
-{"filter": true, "reason": "electoral politics about voting"}
-{"filter": true, "reason": "engagement bait asking for ratio"}
-{"filter": true, "reason": "vapid musing with no real insight"}
-{"filter": false, "reason": "useful tech workflow tip"}
-{"filter": false, "reason": "founder sharing startup product update"}
-{"filter": false, "reason": "meaningful quote about excellence"}
-{"filter": false, "reason": "economics and global investment news"}`;
+{"reason": "electoral politics discussing voting and partisan candidates", "verdict": "filtered"}
+{"reason": "engagement bait asking followers to ratio this post", "verdict": "filtered"}
+{"reason": "useful tech workflow tip for developer productivity", "verdict": "allowed"}
+{"reason": "founder sharing startup product update and roadmap", "verdict": "allowed"}
+{"reason": "thought-provoking question about AI product design choices", "verdict": "highlighted"}
+{"reason": "insightful debate on UX patterns for complex workflows", "verdict": "highlighted"}`;
 
-const DEFAULT_CRITERIA = `FILTER these types of tweets:
-- Engagement bait: rage bait, thirst traps, "hot take", "agree or disagree?", ratio requests
+const DEFAULT_BAD_CRITERIA = `- Engagement bait: rage bait, thirst traps, "hot take", "agree or disagree?", ratio requests
 - Vapid musings: "ugh mondays", "vibes", trend-riding with no actual thought or insight
+- Personal updates without insight: moving announcements, visa news, team offsites, company culture posts
 - Electoral politics: elections, political parties, candidates, voting, partisan debates
 - Culture war content: racism debates, immigration policy, DEI controversy, left vs right ideology
 - Low-effort replies: emoji-only, "this", "lol", "+1", "W", "L", "ratio"
 - Generic complaints: "is X down?", venting without substance
-- Celebrity gossip, sports drama, reality TV
+- Celebrity gossip, sports drama, reality TV`;
 
-DO NOT FILTER (always allow):
-- Tech, programming, software, AI/ML, startups, founder content
+const DEFAULT_GOOD_CRITERIA = `- Tech, programming, software, AI/ML, startups, founder content
 - Economics, finance, markets, investing, business news, global trade
 - Intellectual discussion: philosophy, science, rationality, ideas
 - Wisdom, quotes, or life lessons - especially from founders, investors, or notable figures
@@ -57,10 +60,27 @@ DO NOT FILTER (always allow):
 
 Note: Economics and business news mentioning governments or politicians in economic context is NOT political content - allow it.`;
 
-function constructFullPrompt(criteria: string): string {
+const DEFAULT_HIGHLIGHT_CRITERIA = `- Tweets that invite discussion or debate on design, product, or AI/ML topics
+- Insightful opinions or hot takes on product strategy, UX, or design systems
+- AI research breakthroughs, new models, or technical deep dives
+- Thought-provoking questions about building products or startups
+- Contrarian or novel perspectives on tech industry trends`;
+
+function constructFullPrompt(
+  badCriteria: string,
+  goodCriteria: string,
+  highlightCriteria: string
+): string {
   return `${SYSTEM_PROMPT_PREFIX}
 
-${criteria}
+FILTER these tweets:
+${badCriteria}
+
+ALLOW these tweets:
+${goodCriteria}
+
+HIGHLIGHT these tweets (most interesting, discussion-worthy):
+${highlightCriteria}
 
 ${SYSTEM_PROMPT_SUFFIX}`;
 }
@@ -70,15 +90,31 @@ interface AnalyzeRequest {
   tweetId: string;
   author?: string;
   images?: string[];
-  criteria?: string; // User's custom criteria (optional)
+  badCriteria?: string;
+  goodCriteria?: string;
+  highlightCriteria?: string;
 }
 
 async function analyzeTweet(request: AnalyzeRequest): Promise<TweetAnalysis> {
-  const { tweetText, author, images = [], criteria } = request;
+  const {
+    tweetText,
+    author,
+    images = [],
+    badCriteria,
+    goodCriteria,
+    highlightCriteria,
+  } = request;
 
-  // Use user criteria if provided, otherwise use default
-  const effectiveCriteria = criteria || DEFAULT_CRITERIA;
-  const systemPrompt = constructFullPrompt(effectiveCriteria);
+  // Use user criteria if provided, otherwise use defaults
+  const effectiveBadCriteria = badCriteria || DEFAULT_BAD_CRITERIA;
+  const effectiveGoodCriteria = goodCriteria || DEFAULT_GOOD_CRITERIA;
+  const effectiveHighlightCriteria = highlightCriteria || DEFAULT_HIGHLIGHT_CRITERIA;
+
+  const systemPrompt = constructFullPrompt(
+    effectiveBadCriteria,
+    effectiveGoodCriteria,
+    effectiveHighlightCriteria
+  );
 
   // Include author for context
   const tweetWithAuthor = author ? `@${author}: ${tweetText}` : tweetText;
@@ -141,7 +177,15 @@ Deno.serve({ port: 8000 }, async (req) => {
   if (req.method === 'POST' && new URL(req.url).pathname === '/analyze') {
     try {
       const body = await req.json();
-      const { tweetText, tweetId, author, images, criteria } = body;
+      const {
+        tweetText,
+        tweetId,
+        author,
+        images,
+        badCriteria,
+        goodCriteria,
+        highlightCriteria,
+      } = body;
 
       if (!tweetText || !tweetId) {
         return new Response(
@@ -163,10 +207,12 @@ Deno.serve({ port: 8000 }, async (req) => {
         tweetId,
         author,
         images,
-        criteria,
+        badCriteria,
+        goodCriteria,
+        highlightCriteria,
       });
 
-      console.log(`✅ Result for ${tweetId}: filter=${result.filter}`);
+      console.log(`✅ Result for ${tweetId}: verdict=${result.verdict}`);
 
       return new Response(JSON.stringify(result), {
         status: 200,

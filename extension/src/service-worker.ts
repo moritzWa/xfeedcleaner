@@ -1,5 +1,9 @@
-import { DEFAULT_CRITERIA } from "./lib/constants";
-import { analyzeTweet, type AnalyzeResponse } from "./lib/api-service";
+import {
+  DEFAULT_BAD_CRITERIA,
+  DEFAULT_GOOD_CRITERIA,
+  DEFAULT_HIGHLIGHT_CRITERIA,
+} from "./lib/constants";
+import { analyzeTweet, type AnalyzeResponse, type Verdict } from "./lib/api-service";
 
 // Polyfill for Firefox
 if (typeof browser === "undefined") {
@@ -13,7 +17,7 @@ async function analyzeWithServer(
   images: string[] = []
 ): Promise<{
   tweetId: string;
-  isBait: boolean;
+  verdict: Verdict;
   reason?: string;
   debugInfo?: { tweetText: string; author: string; images: string[] };
   error?: string;
@@ -21,30 +25,39 @@ async function analyzeWithServer(
   try {
     console.log("Analyzing tweet:", { tweetId, text, imageCount: images.length });
 
-    // Get criteria from sync storage
-    const { promptCriteria } = await browser.storage.sync.get(["promptCriteria"]);
+    // Get all three criteria from sync storage
+    const {
+      badCriteria,
+      goodCriteria,
+      highlightCriteria,
+    } = await browser.storage.sync.get([
+      "badCriteria",
+      "goodCriteria",
+      "highlightCriteria",
+    ]);
 
     console.log("Retrieved settings:", {
-      hasCriteria: !!promptCriteria,
+      hasBadCriteria: !!badCriteria,
+      hasGoodCriteria: !!goodCriteria,
+      hasHighlightCriteria: !!highlightCriteria,
     });
 
-    // Use the stored criteria or fall back to default
-    const criteria = promptCriteria || DEFAULT_CRITERIA;
-
-    // Call server API
+    // Call server API with all three criteria
     const result = await analyzeTweet({
       tweetText: text,
       tweetId,
       author,
       images,
-      criteria,
+      badCriteria: badCriteria || DEFAULT_BAD_CRITERIA,
+      goodCriteria: goodCriteria || DEFAULT_GOOD_CRITERIA,
+      highlightCriteria: highlightCriteria || DEFAULT_HIGHLIGHT_CRITERIA,
     });
 
     // Check for error response
     if ("error" in result) {
       return {
         tweetId,
-        isBait: false,
+        verdict: 'allowed',
         error: result.error,
         debugInfo: { tweetText: text, author, images },
       };
@@ -54,7 +67,7 @@ async function analyzeWithServer(
 
     return {
       tweetId,
-      isBait: analysisResult.filter,
+      verdict: analysisResult.verdict,
       reason: analysisResult.reason,
       debugInfo: { tweetText: text, author, images },
     };
@@ -62,7 +75,7 @@ async function analyzeWithServer(
     console.error("Error analyzing tweet:", error);
     return {
       tweetId,
-      isBait: false,
+      verdict: 'allowed',
       error: (error as Error).message || "Unknown error",
       debugInfo: { tweetText: text, author, images },
     };
@@ -92,7 +105,7 @@ browser.runtime.onMessage.addListener((request, sender) => {
             action: "analysisResult",
             result: {
               tweetId,
-              isBait: result.isBait,
+              verdict: result.verdict,
               reason: result.reason,
               debugInfo: result.debugInfo,
               error: result.error || null,
@@ -108,11 +121,19 @@ browser.runtime.onMessage.addListener((request, sender) => {
 
 // When the service worker starts, ensure defaults are set
 browser.runtime.onInstalled.addListener(async () => {
-  const { promptCriteria } = await browser.storage.sync.get(["promptCriteria"]);
-  const defaults = {
-    ...(promptCriteria ? {} : { promptCriteria: DEFAULT_CRITERIA }),
+  const stored = await browser.storage.sync.get([
+    "badCriteria",
+    "goodCriteria",
+    "highlightCriteria",
+  ]);
+
+  const defaults: Record<string, any> = {
     isEnabled: true,
   };
+
+  if (!stored.badCriteria) defaults.badCriteria = DEFAULT_BAD_CRITERIA;
+  if (!stored.goodCriteria) defaults.goodCriteria = DEFAULT_GOOD_CRITERIA;
+  if (!stored.highlightCriteria) defaults.highlightCriteria = DEFAULT_HIGHLIGHT_CRITERIA;
 
   if (Object.keys(defaults).length > 0) {
     await browser.storage.sync.set(defaults);
