@@ -24,16 +24,16 @@ Note: Economics and business news mentioning governments or politicians in econo
 export const SYSTEM_PROMPT_PREFIX = `You are a tweet filter. Decide if this tweet should be filtered based on:`;
 
 export const SYSTEM_PROMPT_SUFFIX = `
-Respond in JSON: {"filter": true/false, "reason": "brief 4-8 word explanation"}
+Respond in JSON: {"filter": true/false, "reason": "7-12 word explanation"}
 
 Examples:
-{"filter": true, "reason": "electoral politics about voting"}
-{"filter": true, "reason": "engagement bait asking for ratio"}
-{"filter": true, "reason": "vapid musing with no real insight"}
-{"filter": false, "reason": "useful tech workflow tip"}
-{"filter": false, "reason": "founder sharing startup product update"}
-{"filter": false, "reason": "meaningful quote about excellence"}
-{"filter": false, "reason": "economics and global investment news"}`;
+{"filter": true, "reason": "electoral politics discussing voting and partisan candidates"}
+{"filter": true, "reason": "engagement bait asking followers to ratio this post"}
+{"filter": true, "reason": "vapid musing about vibes with no real insight"}
+{"filter": false, "reason": "useful tech workflow tip for developer productivity"}
+{"filter": false, "reason": "founder sharing exciting startup product update and roadmap"}
+{"filter": false, "reason": "meaningful quote about excellence from notable figure"}
+{"filter": false, "reason": "economics news about global markets and investment trends"}`;
 
 export function constructFullPrompt(criteria: string): string {
   return `${SYSTEM_PROMPT_PREFIX}

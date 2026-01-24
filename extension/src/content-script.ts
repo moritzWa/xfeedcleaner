@@ -94,14 +94,14 @@ showButtonStyle.textContent = `
   .xfc-verdict-card {
     position: fixed;
     font-family: system-ui, -apple-system, sans-serif;
-    font-size: 11px;
-    padding: 6px 10px;
-    border-radius: 6px;
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 8px;
     z-index: 9999;
-    max-width: 180px;
+    max-width: 220px;
     background: rgba(255, 255, 255, 0.95);
     border: 1px solid #e1e8ed;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     pointer-events: auto;
   }
 
@@ -109,12 +109,12 @@ showButtonStyle.textContent = `
   .xfc-verdict-card.dark {
     background: rgba(32, 35, 39, 0.95);
     border-color: #38444d;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
   }
 
   .xfc-verdict-card .xfc-verdict-icon {
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
   }
 
   .xfc-verdict-card.allowed .xfc-verdict-icon {
@@ -127,9 +127,9 @@ showButtonStyle.textContent = `
 
   .xfc-verdict-card .xfc-verdict-reason {
     color: #536471;
-    font-size: 11px;
-    line-height: 1.3;
-    margin-bottom: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+    margin-bottom: 8px;
   }
 
   .xfc-verdict-card.dark .xfc-verdict-reason {
@@ -139,9 +139,9 @@ showButtonStyle.textContent = `
   .xfc-verdict-card .xfc-copy-debug {
     background: #f7f9fa;
     border: 1px solid #e1e8ed;
-    border-radius: 4px;
-    padding: 4px 6px;
-    font-size: 10px;
+    border-radius: 5px;
+    padding: 5px 8px;
+    font-size: 12px;
     cursor: pointer;
     color: #536471;
     text-align: center;
@@ -367,7 +367,7 @@ chrome.runtime.onMessage.addListener((message) => {
 
                 // Blur/hide the main tweet with reason and debug info
                 if (displayMode === 'blur') {
-                    applyBlurEffect(tweetElement, reason, debugInfo);
+                    applyBlurEffect(tweetElement, reason);
                 } else {
                     hideTweet(tweetElement);
                 }

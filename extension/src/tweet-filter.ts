@@ -12,7 +12,6 @@ export interface DebugInfo {
 export function applyBlurEffect(
     tweetElement: Element,
     reason?: string,
-    debugInfo?: DebugInfo
 ) {
     // Skip if already blurred
     if (tweetElement.classList.contains('xfc-tweet')) return;
@@ -42,46 +41,9 @@ export function applyBlurEffect(
         controlsContainer.appendChild(reasonsEl);
     }
 
-    // Add debug button if debug info available
-    if (debugInfo) {
-        const debugButton = document.createElement('button');
-        debugButton.className = 'xfc-show-tweet-button';
-        debugButton.textContent = '📋 Copy Debug';
-        debugButton.style.fontSize = '11px';
-        debugButton.style.padding = '4px 8px';
-        controlsContainer.appendChild(debugButton);
-
-        debugButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const imagesSection = debugInfo.images.length > 0
-                ? `\nIMAGES SENT (${debugInfo.images.length}):\n${debugInfo.images.join('\n')}\n`
-                : '\nIMAGES SENT: none\n';
-
-            const debugText = `=== XFeedCleaner Debug Info ===
-
-SYSTEM PROMPT:
-${debugInfo.prompt}
-
-TWEET TEXT SENT:
-${debugInfo.tweetText}
-${imagesSection}
-MODEL RESPONSE:
-${debugInfo.rawResponse}
-`;
-            navigator.clipboard.writeText(debugText).then(() => {
-                debugButton.textContent = '✓ Copied!';
-                setTimeout(() => {
-                    debugButton.textContent = '📋 Copy Debug';
-                }, 2000);
-            });
-        });
-    }
-
     // Apply blur effect
     tweetElement.classList.add('xfc-tweet');
-    (tweetElement as HTMLElement).style.filter = 'blur(12px)';
+    (tweetElement as HTMLElement).style.filter = 'blur(20px)';
 
     // Add click handler for the show button
     showButton.addEventListener('click', (e) => {
