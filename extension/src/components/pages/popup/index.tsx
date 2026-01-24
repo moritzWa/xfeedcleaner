@@ -1,17 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import React, { useEffect, useState } from 'react';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { useEffect, useState } from 'react';
 
 function Popup() {
-  const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
   const [isEnabled, setIsEnabled] = useState(true);
+  const [displayMode, setDisplayMode] = useState<'blur' | 'hide'>('blur');
 
   useEffect(() => {
-    // Load both API key and enabled state
-    chrome.storage.sync.get(['groqApiKey', 'isEnabled'], (result) => {
-      setHasApiKey(!!result.groqApiKey);
-      // Default to true if not set
+    chrome.storage.sync.get(['isEnabled', 'displayMode'], (result) => {
       setIsEnabled(result.isEnabled ?? true);
+      if (result.displayMode) {
+        setDisplayMode(result.displayMode);
+      }
     });
   }, []);
 
@@ -35,8 +37,14 @@ function Popup() {
     chrome.runtime.openOptionsPage();
   };
 
+  const handleDisplayModeChange = (value: string) => {
+    const mode = value as 'blur' | 'hide';
+    setDisplayMode(mode);
+    chrome.storage.sync.set({ displayMode: mode });
+  };
+
   return (
-    <div className="w-[300px] p-5 font-mono lowercase">
+    <div className="w-[300px] p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <img 
@@ -61,36 +69,33 @@ function Popup() {
       </div>
       
       <p className="text-sm text-muted-foreground mb-5 text-pretty">
-        Filter boring content from your X feed
+        Filter distracting content from your X feed
       </p>
 
-      {hasApiKey === false && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-5">
-          <p className="text-sm text-red-600 font-medium">
-            ⚠️ API key not set
-          </p>
-          <p className="text-sm text-red-500 mt-1">
-            Please set your Groq API key in the settings to use this extension.
-          </p>
-        </div>
-      )}
-
-      <div className="p-0 mb-5">
-        <p className="text-sm text-muted-foreground mb-2">
-          To use this extension, you need to:
-        </p>
-        <ul className="list-disc pl-5 text-sm text-muted-foreground">
-          <li className="my-1">Set up your API keys</li>
-          <li className="my-1">Customize system prompts (optional)</li>
-        </ul>
+      <div className="mb-5">
+        <p className="text-sm font-medium mb-2">Display mode</p>
+        <RadioGroup
+          value={displayMode}
+          onValueChange={handleDisplayModeChange}
+          className="flex gap-4"
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="blur" id="blur" />
+            <Label htmlFor="blur">Blur</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="hide" id="hide" />
+            <Label htmlFor="hide">Hide</Label>
+          </div>
+        </RadioGroup>
       </div>
 
-      <Button 
+      <Button
         onClick={openSettings}
-        className="w-full py-3 bg-black hover:bg-gray-800 text-white rounded-full 
-        text-sm font-semibold transition-colors lowercase"
+        className="w-full py-3 bg-black hover:bg-gray-800 text-white rounded-full
+        text-sm font-semibold transition-colors"
       >
-        Open Settings
+        Prompt Settings
       </Button>
     </div>
   );

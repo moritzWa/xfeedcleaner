@@ -1,20 +1,12 @@
-import {
-  DEFAULT_CRITERIA,
-  constructFullPrompt,
-} from "./lib/constants";
+import { DEFAULT_CRITERIA } from "./lib/constants";
+import { analyzeTweet, type AnalyzeResponse } from "./lib/api-service";
 
 // Polyfill for Firefox
 if (typeof browser === "undefined") {
   (globalThis as any).browser = chrome;
 }
 
-// Models that support vision/image input
-const VISION_MODELS = [
-  "meta-llama/llama-4-scout-17b-16e-instruct",
-  "meta-llama/llama-4-maverick-17b-128e-instruct",
-];
-
-async function analyzeWithGroq(
+async function analyzeWithServer(
   text: string,
   tweetId: string,
   author: string,
@@ -23,142 +15,48 @@ async function analyzeWithGroq(
   tweetId: string;
   isBait: boolean;
   reason?: string;
-  debugInfo?: { prompt: string; tweetText: string; author: string; images: string[]; rawResponse: string };
+  debugInfo?: { tweetText: string; author: string; images: string[] };
   error?: string;
 }> {
-  let fullPrompt = "";
-  let rawResponse = "";
-
   try {
     console.log("Analyzing tweet:", { tweetId, text, imageCount: images.length });
 
-    // Get all settings from sync storage
-    const { groqApiKey, promptCriteria, selectedModel, isEnabled } =
-      await browser.storage.sync.get([
-        "groqApiKey",
-        "promptCriteria",
-        "selectedModel",
-        "isEnabled",
-      ]);
+    // Get criteria from sync storage
+    const { promptCriteria } = await browser.storage.sync.get(["promptCriteria"]);
 
     console.log("Retrieved settings:", {
-      hasApiKey: !!groqApiKey,
       hasCriteria: !!promptCriteria,
-      model: selectedModel,
-      isEnabled,
     });
-
-    if (!groqApiKey) {
-      throw new Error(
-        "Groq API key not found. Please set it in the extension settings."
-      );
-    }
 
     // Use the stored criteria or fall back to default
     const criteria = promptCriteria || DEFAULT_CRITERIA;
-    fullPrompt = constructFullPrompt(criteria);
 
-    // Use selected model or fall back to default
-    const model = selectedModel || "llama-3.3-70b-versatile";
+    // Call server API
+    const result = await analyzeTweet({
+      tweetText: text,
+      tweetId,
+      author,
+      images,
+      criteria,
+    });
 
-    // Check if model supports vision and we have images
-    const isVisionModel = VISION_MODELS.includes(model);
-    const hasImages = images.length > 0;
-
-    // Build user message content based on model capabilities
-    // Include author for context (helps with known accounts)
-    const tweetWithAuthor = author ? `@${author}: ${text}` : text;
-    let userContent: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
-
-    if (isVisionModel && hasImages) {
-      // Vision model with images - use multimodal format (send only first image for simplicity)
-      userContent = [
-        { type: "text", text: tweetWithAuthor || "Analyze this tweet image:" },
-        {
-          type: "image_url" as const,
-          image_url: { url: images[0] },
-        },
-      ];
-    } else {
-      // Text-only
-      userContent = tweetWithAuthor;
-    }
-
-    const response = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${groqApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            {
-              role: "system",
-              content: fullPrompt,
-            },
-            {
-              role: "user",
-              content: userContent,
-            },
-          ],
-          temperature: 0,
-          max_tokens: 100,
-        }),
-      }
-    );
-
-    const data = await response.json();
-    console.log("Groq API response:", data);
-
-    if (
-      !data ||
-      !data.choices ||
-      !data.choices[0] ||
-      !data.choices[0].message
-    ) {
-      console.error("Invalid response from Groq:", data);
+    // Check for error response
+    if ("error" in result) {
       return {
         tweetId,
         isBait: false,
-        error: "Invalid API response",
-        debugInfo: { prompt: fullPrompt, tweetText: text, author, images, rawResponse: JSON.stringify(data) },
+        error: result.error,
+        debugInfo: { tweetText: text, author, images },
       };
     }
 
-    rawResponse = data.choices[0].message.content;
-
-    // Parse JSON response
-    let isBait = false;
-    let reason = "";
-
-    try {
-      // Try to extract JSON from response (handle potential extra text)
-      const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        isBait = parsed.filter === true;
-        reason = parsed.reason || "";
-      } else {
-        // Fallback: check if response contains "true" or "filter": true
-        isBait = rawResponse.toLowerCase().includes('"filter": true') ||
-                 rawResponse.toLowerCase().includes('"filter":true');
-        reason = rawResponse;
-      }
-    } catch (parseError) {
-      console.error("Failed to parse JSON response:", parseError);
-      // Fallback to old logic
-      isBait = rawResponse.toLowerCase().includes("true");
-      reason = rawResponse;
-    }
+    const analysisResult = result as AnalyzeResponse;
 
     return {
       tweetId,
-      isBait,
-      reason,
-      debugInfo: { prompt: fullPrompt, tweetText: text, author, images, rawResponse },
+      isBait: analysisResult.filter,
+      reason: analysisResult.reason,
+      debugInfo: { tweetText: text, author, images },
     };
   } catch (error) {
     console.error("Error analyzing tweet:", error);
@@ -166,7 +64,7 @@ async function analyzeWithGroq(
       tweetId,
       isBait: false,
       error: (error as Error).message || "Unknown error",
-      debugInfo: { prompt: fullPrompt, tweetText: text, author, images, rawResponse },
+      debugInfo: { tweetText: text, author, images },
     };
   }
 }
@@ -187,7 +85,7 @@ browser.runtime.onMessage.addListener((request, sender) => {
       const images = request.content.images || [];
 
       // Continue with analysis...
-      analyzeWithGroq(request.content.text, tweetId, author, images).then((result) => {
+      analyzeWithServer(request.content.text, tweetId, author, images).then((result) => {
         console.log("Analysis result:", result);
         if (sender.tab && sender.tab.id) {
           browser.tabs.sendMessage(sender.tab.id, {
@@ -210,13 +108,9 @@ browser.runtime.onMessage.addListener((request, sender) => {
 
 // When the service worker starts, ensure defaults are set
 browser.runtime.onInstalled.addListener(async () => {
-  const { promptCriteria, selectedModel } = await browser.storage.sync.get([
-    "promptCriteria",
-    "selectedModel",
-  ]);
+  const { promptCriteria } = await browser.storage.sync.get(["promptCriteria"]);
   const defaults = {
     ...(promptCriteria ? {} : { promptCriteria: DEFAULT_CRITERIA }),
-    ...(selectedModel ? {} : { selectedModel: "llama-3.3-70b-versatile" }),
     isEnabled: true,
   };
 
