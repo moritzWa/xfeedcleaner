@@ -224,10 +224,13 @@ const tweetObserver = new IntersectionObserver(
                     });
 
                     // If this is a reply (has connector above), get ALL parent context
-                    // Include article text if present
+                    // Include article text and URL card content if present
                     let contextualText = tweetContent.text;
                     if (tweetContent.articleText) {
                         contextualText += ` [Article: ${tweetContent.articleText}]`;
+                    }
+                    if (tweetContent.cardText) {
+                        contextualText += ` [Link: ${tweetContent.cardText}]`;
                     }
                     if (threadInfo.hasConnectorAbove) {
                         const parentContents = getAllParentTweetContent(tweetElement);

@@ -158,6 +158,7 @@ export interface TweetContent {
     };
     id: string;
     articleText: string;
+    cardText: string; // URL card preview content (title, domain)
 }
 
 // Function to extract tweet content
@@ -257,6 +258,15 @@ export function getTweetContent(tweetElement: Element): TweetContent {
         articleText = articleText.trim();
     }
 
+    // Find URL card content (link previews with title and domain)
+    let cardText = '';
+    const cardWrappers = findElementsByTestId(tweetElement, 'card.wrapper');
+    if (cardWrappers.length > 0) {
+        const cardWrapper = cardWrappers[0];
+        // Get all text from the card (title, domain, description)
+        cardText = getTextContent(cardWrapper).trim();
+    }
+
     // Find timestamp
     const timeElements = tweetElement.getElementsByTagName('time');
     const timestamp = timeElements[0]?.getAttribute('datetime') || '';
@@ -299,6 +309,7 @@ export function getTweetContent(tweetElement: Element): TweetContent {
         metrics,
         id,
         articleText,
+        cardText,
     };
 }
 
