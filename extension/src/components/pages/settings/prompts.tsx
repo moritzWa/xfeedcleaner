@@ -142,13 +142,9 @@ export function PromptsSettings() {
         <textarea
           value={criteria.highlight}
           onChange={(e) => handleChange('highlight', e.target.value)}
-          className="w-full h-40 p-3 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full h-40 p-3 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-black"
           placeholder="Enter highlight criteria..."
         />
-      </div>
-
-      <div className="text-sm text-gray-500">
-        Priority: Filter → Highlight → Allow. Tweets are classified in this order.
       </div>
     </div>
   );

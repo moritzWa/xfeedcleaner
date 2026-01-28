@@ -2,15 +2,15 @@
 
 ## Extension Name
 
-**XFeedCleaner - AI Twitter/X Feed Filter**
+**Chirply - X Feed Cleaner**
 
-Includes key SEO terms: X, Twitter, Feed, Filter, AI (39 chars, under 75 limit)
+Bird-themed name + clear purpose. SEO terms: X, Feed, Cleaner (29 chars, under 75 limit)
 
 ---
 
 ## Short Description (132 character limit)
 
-Filter boring tweets with AI. Customize what to hide: politics, engagement bait, low-effort posts. Clean X feed in seconds. (124 chars)
+AI-powered Twitter/X feed filter. Hide engagement bait, politics, and low-effort posts. Highlight the best content. (114 chars)
 
 ---
 
@@ -18,20 +18,24 @@ Filter boring tweets with AI. Customize what to hide: politics, engagement bait,
 
 TAKE CONTROL OF YOUR X/TWITTER FEED WITH AI
 
-Tired of scrolling through engagement bait, political rants, and low-effort content? XFeedCleaner uses AI to analyze tweets in real-time and hides the content you don't want to see.
+Tired of scrolling through engagement bait, political rants, and low-effort content? Chirply uses AI to analyze tweets in real-time and filters the content you don't want to see.
 
 HOW IT WORKS:
 
 🔍 REAL-TIME AI ANALYSIS
-As you scroll, the extension analyzes each tweet using Groq's ultra-fast AI. Tweets matching your filter criteria get blurred instantly.
+As you scroll, Chirply analyzes each tweet using fast AI. Tweets matching your filter criteria get blurred instantly.
+
+⚡ THREE-TIER CLASSIFICATION
+• FILTER - Hide engagement bait, politics, low-effort posts
+• ALLOW - Keep tech, startups, finance, intellectual discussion
+• HIGHLIGHT - Surface the most interesting, discussion-worthy tweets
 
 ✏️ FULLY CUSTOMIZABLE FILTERS
-Define exactly what you want to hide:
+Define exactly what you want to filter, allow, or highlight:
 • Political content and ideological debates
 • Engagement bait ("hot takes", "agree or disagree?")
 • Low-effort replies (emoji-only, "lol", "+1")
-• Shallow social commentary and poll-style posts
-• Off-topic promotions and announcements
+• Vapid musings and trend-riding
 • Or write your own custom criteria
 
 🧵 THREAD-AWARE FILTERING
@@ -43,20 +47,8 @@ Curious what was hidden? Click to reveal any filtered tweet instantly. You're al
 ⚡ LIGHTNING FAST
 Powered by Groq's API - tweets are analyzed in milliseconds. No lag, no waiting.
 
-🔒 PRIVACY FIRST
-Your API key stays local. Tweet content is only sent to Groq for analysis - we never see or store your data.
-
-GETTING STARTED:
-1. Get a free API key from console.groq.com
-2. Enter your key in extension settings
-3. Customize your filter criteria
-4. Enjoy a cleaner X feed
-
-COMING SOON:
-📸 Image analysis - Filter based on image content, not just text
-🚀 Hosted mode - No API key needed (optional)
-👎 Quick "Not Interested" - One-click to add new filter categories
-🔄 Reverse mode - See only filtered tweets to tune your settings
+🔒 NO API KEY NEEDED
+Just install and go. No setup required.
 
 PERFECT FOR:
 • Professionals who want signal over noise
@@ -71,8 +63,8 @@ No tracking. No ads. Just a cleaner feed.
 ## Screenshots Captions
 
 1. "Filtered tweets are blurred - click to reveal anytime"
-2. "Customize exactly what content to filter"
-3. "Choose from multiple fast AI models"
+2. "Customize exactly what content to filter, allow, or highlight"
+3. "Highlighted tweets get a green border for easy discovery"
 4. "Thread-aware: parent and reply filtered together"
 5. "Clean, distraction-free browsing experience"
 
@@ -86,20 +78,17 @@ No tracking. No ads. Just a cleaner feed.
 
 ## Single Purpose Description
 
-Filter tweets on X/Twitter using AI analysis. The extension analyzes tweet content and blurs posts matching user-defined criteria (engagement bait, political content, low-effort replies, etc.).
+Filter tweets on X/Twitter using AI analysis. The extension analyzes tweet content and classifies posts as filtered (hidden), allowed (shown), or highlighted (emphasized) based on user-defined criteria.
 
 ---
 
 ## Permission Justifications
 
 ### Storage Permission
-**Why needed:** To save user preferences including API key, filter criteria, selected AI model, and enabled/disabled state. All settings sync across devices using Chrome's sync storage.
+**Why needed:** To save user preferences including filter criteria, display mode, and enabled/disabled state. All settings sync across devices using Chrome's sync storage.
 
 ### Host Permissions (x.com, twitter.com)
 **Why needed:** The content script must run on X/Twitter pages to detect tweets as they appear in the viewport, apply blur effects to filtered content, and inject the reveal UI. Without this permission, the extension cannot interact with the X/Twitter feed.
 
-### Host Permission (api.groq.com)
-**Why needed:** To send tweet text to Groq's AI API for content analysis. The service worker makes API calls to determine if tweets match the user's filter criteria. This is the core functionality of the extension.
-
 ### Service Worker (Background)
-**Why needed:** The service worker handles communication between the content script and Groq's API. When a new tweet is detected, the content script sends a message to the service worker, which then calls the Groq API and returns the analysis result. This architecture keeps API keys secure (not exposed in content scripts) and allows for efficient request handling.
+**Why needed:** The service worker handles communication between the content script and the AI backend. When a new tweet is detected, the content script sends a message to the service worker, which then calls the API and returns the analysis result.

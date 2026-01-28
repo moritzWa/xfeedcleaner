@@ -1,7 +1,7 @@
 {
-  "name": "xfeedcleaner",
+  "name": "chirply",
   "private": true,
-  "version": "0.0.6",
+  "version": "0.0.8",
   "type": "module",
   "author": {
     "name": "Moritz Wallawitsch",
@@ -13,7 +13,7 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "package": "npm run build && cd dist && zip -r ../xfeedcleaner-v$(grep -o '\"version\": *\"[^\"]*\"' ../public/manifest.json | grep -o '[0-9][^\"]*').zip ."
+    "package": "npm run build && cd dist && zip -r ../chirply-v$(grep -o '\"version\": *\"[^\"]*\"' ../public/manifest.json | grep -o '[0-9][^\"]*').zip ."
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

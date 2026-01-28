@@ -47,13 +47,13 @@ function Popup() {
     <div className="w-[300px] p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <img 
-            src="/logos/logo128.png" 
-            alt="XFeedCleaner Logo"
+          <img
+            src="/logos/logo128.png"
+            alt="Chirply Logo"
             className="w-6 h-6 rounded-full"
           />
           <h1 className="text-xl font-semibold text-black m-0">
-            XFeedCleaner
+            Chirply
           </h1>
         </div>
         <div className="flex items-center gap-2">

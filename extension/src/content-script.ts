@@ -15,26 +15,26 @@ import { initSidebarRemover } from './sidebar-remover';
 // Inject styles
 const style = document.createElement('style');
 style.textContent = `
-  #xfeedcleaner * {
+  #chirply * {
     all: unset;
   }
 
-  #xfeedcleaner ul {
+  #chirply ul {
     list-style-type: disc !important;
     margin: 0 !important;
     padding-left: 20px !important;
   }
 
-  #xfeedcleaner li {
+  #chirply li {
   display: list-item !important;
     margin: 0.5em 0 !important;
   }
 
-  #xfeedcleaner a {
+  #chirply a {
     cursor: pointer;
   }
 
-  #xfeedcleaner hr {
+  #chirply hr {
     height: 1px !important;
     border: none !important;
     padding: 0 !important;

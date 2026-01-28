@@ -17,7 +17,7 @@ export interface AnalyzeRequest {
 
 const API_URL = process.env.NODE_ENV === 'development'
   ? 'http://localhost:8000/analyze'
-  : 'https://unbaited.moritzwa.deno.dev/analyze';
+  : 'https://xfeedcleaner.moritzwa.deno.net/analyze';
 
 console.log('🔗 API_URL:', API_URL, '(NODE_ENV:', process.env.NODE_ENV, ')');
 

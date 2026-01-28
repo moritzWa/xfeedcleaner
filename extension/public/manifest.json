@@ -1,7 +1,7 @@
 {
-  "name": "XFeedCleaner",
-  "description": "Filter boring and sloppy content from your X feed using AI",
-  "version": "0.0.6",
+  "name": "Chirply - X Feed Cleaner",
+  "description": "AI-powered Twitter/X feed filter. Hide engagement bait, politics, and low-effort content.",
+  "version": "0.0.8",
   "manifest_version": 3,
   "icons": {
     "16": "logos/logo16.png",
@@ -47,7 +47,7 @@
   ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "xfeedcleaner@moritzw.com",
+      "id": "chirply@moritzw.com",
       "strict_min_version": "58.0"
     }
   }
