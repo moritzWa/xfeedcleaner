@@ -10,9 +10,9 @@ export interface AnalyzeRequest {
   tweetId: string;
   author?: string;
   images?: string[];
-  badCriteria: string;
-  goodCriteria: string;
-  highlightCriteria: string;
+  badCriteria?: string;
+  goodCriteria?: string;
+  highlightCriteria?: string;
 }
 
 const API_URL = process.env.NODE_ENV === 'development'

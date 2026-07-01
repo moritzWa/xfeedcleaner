@@ -42,15 +42,21 @@ async function analyzeWithServer(
       hasHighlightCriteria: !!highlightCriteria,
     });
 
-    // Call server API with all three criteria
+    // Only send criteria if user has customized them (differs from default)
+    // If not customized, let server use its own defaults (allows remote updates)
+    const customBad = badCriteria && badCriteria !== DEFAULT_BAD_CRITERIA ? badCriteria : undefined;
+    const customGood = goodCriteria && goodCriteria !== DEFAULT_GOOD_CRITERIA ? goodCriteria : undefined;
+    const customHighlight = highlightCriteria && highlightCriteria !== DEFAULT_HIGHLIGHT_CRITERIA ? highlightCriteria : undefined;
+
+    // Call server API - only include criteria if customized
     const result = await analyzeTweet({
       tweetText: text,
       tweetId,
       author,
       images,
-      badCriteria: badCriteria || DEFAULT_BAD_CRITERIA,
-      goodCriteria: goodCriteria || DEFAULT_GOOD_CRITERIA,
-      highlightCriteria: highlightCriteria || DEFAULT_HIGHLIGHT_CRITERIA,
+      ...(customBad && { badCriteria: customBad }),
+      ...(customGood && { goodCriteria: customGood }),
+      ...(customHighlight && { highlightCriteria: customHighlight }),
     });
 
     // Check for error response
